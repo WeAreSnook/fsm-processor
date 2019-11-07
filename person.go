@@ -1,0 +1,14 @@
+package main
+
+// Person represents all the details associated with someone
+type Person struct {
+	forename string
+	surname  string
+	age      int
+}
+
+// IsSameAs checks if two Person structs refer to the same person
+func (p Person) IsSameAs(person Person) bool {
+	// TODO jaro-winkler comparison + dob comparison. See notion.
+	return p.forename == person.forename && p.surname == person.surname
+}
