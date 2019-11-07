@@ -6,7 +6,7 @@ func TestFindExisting(t *testing.T) {
 	chris := Person{forename: "Chris", surname: "Sloey", age: 29}
 	michael := Person{forename: "Michael", surname: "Hayes", age: 31}
 
-	store := PersonStore{
+	store := PeopleStore{
 		people: []Person{
 			chris,
 			michael,
@@ -41,7 +41,7 @@ func TestAdd(t *testing.T) {
 	michael := Person{forename: "Michael", surname: "Hayes", age: 31}
 	newPerson := Person{forename: "Bob", surname: "WOW", age: 92}
 
-	store := PersonStore{
+	store := PeopleStore{
 		people: []Person{
 			chris,
 			michael,
@@ -66,7 +66,7 @@ func TestUpdate(t *testing.T) {
 	chris := Person{forename: "Chris", surname: "Sloey", age: 29}
 	michael := Person{forename: "Michael", surname: "Hayes", age: 31}
 
-	store := PersonStore{
+	store := PeopleStore{
 		people: []Person{
 			chris,
 			michael,
