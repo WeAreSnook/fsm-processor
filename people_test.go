@@ -35,3 +35,60 @@ func TestFindExisting(t *testing.T) {
 		}
 	})
 }
+
+func TestAdd(t *testing.T) {
+	chris := Person{forename: "Chris", surname: "Sloey", age: 29}
+	michael := Person{forename: "Michael", surname: "Hayes", age: 31}
+	newPerson := Person{forename: "Bob", surname: "WOW", age: 92}
+
+	store := PersonStore{
+		people: []Person{
+			chris,
+			michael,
+		},
+	}
+
+	t.Run("adds person successfully", func(t *testing.T) {
+		store.Add(newPerson)
+		addedUser, err := store.FindExisting(newPerson)
+
+		if err != nil {
+			t.Errorf("error searching for added user %#v", err)
+		}
+
+		if !addedUser.IsSameAs(newPerson) {
+			t.Errorf("user wasn't added, expected %#v to be same as %#v", addedUser, newPerson)
+		}
+	})
+}
+
+func TestUpdate(t *testing.T) {
+	chris := Person{forename: "Chris", surname: "Sloey", age: 29}
+	michael := Person{forename: "Michael", surname: "Hayes", age: 31}
+
+	store := PersonStore{
+		people: []Person{
+			chris,
+			michael,
+		},
+	}
+
+	t.Run("updates correct person", func(t *testing.T) {
+		updatedChrisDetails := Person{forename: "Christopher", surname: "Sloey", age: 29}
+		err := store.Update(chris, updatedChrisDetails)
+
+		if err != nil {
+			t.Errorf("error updating user %#v", err)
+		}
+
+		updatedUser, err := store.FindExisting(updatedChrisDetails)
+
+		if err != nil {
+			t.Errorf("error finding updated user user %#v", err)
+		}
+
+		if !updatedUser.IsSameAs(updatedChrisDetails) {
+			t.Errorf("user wasn't added, expected %#v to be same as %#v", updatedUser, updatedChrisDetails)
+		}
+	})
+}

@@ -35,10 +35,10 @@ func (p *PersonStore) FindExisting(person Person) (Person, error) {
 }
 
 // Update finds an existing matching Person and replaces the entire struct
-func (p *PersonStore) Update(person Person) error {
+func (p *PersonStore) Update(existingPerson, newDetails Person) error {
 	for i, existingPerson := range p.people {
-		if existingPerson.IsSameAs(person) {
-			p.people[i] = person
+		if existingPerson.IsSameAs(existingPerson) {
+			p.people[i] = newDetails
 			return nil
 		}
 	}
