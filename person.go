@@ -9,6 +9,6 @@ type Person struct {
 
 // IsSameAs checks if two Person structs refer to the same person
 func (p Person) IsSameAs(person Person) bool {
-	// TODO jaro-winkler comparison + dob comparison. See notion.
+	// TODO jaro-winkler comparison + dob comparison. See notion note.
 	return p.forename == person.forename && p.surname == person.surname
 }
