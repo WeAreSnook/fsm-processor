@@ -45,3 +45,17 @@ func (p *PeopleStore) Update(existingPerson, newDetails Person) error {
 
 	return ErrPersonNotFound
 }
+
+// Delete removes the person from the store. Doesn't preserve order.
+func (p *PeopleStore) Delete(person Person) error {
+	for i, existingPerson := range p.people {
+		if existingPerson == person {
+			// Move element to end and truncate
+			p.people[i] = p.people[len(p.people)-1]
+			p.people = p.people[:len(p.people)-1]
+			return nil
+		}
+	}
+
+	return errors.New("Person doesn't exist")
+}

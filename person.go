@@ -2,9 +2,10 @@ package main
 
 // Person represents all the details associated with someone
 type Person struct {
-	forename string
-	surname  string
-	age      int
+	forename    string
+	surname     string
+	ageYears    int
+	claimNumber string
 }
 
 // IsSameAs checks if two Person structs refer to the same person
