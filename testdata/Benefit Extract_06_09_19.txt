@@ -1,0 +1,5 @@
+Claim Number,NINO,Clmt Title,Clmt Surname,Clmt First Forename,Clmt DOB
+17,AB123456C,Mr,Smith,John,12-12-1990
+2,AB123456D,Ms,Smith,Emma,12-12-1992
+19,AB123456E,Ms,Esiuol,Louise,12-12-1968
+9999,AB123456F,Mr,Egroeg,George,12-12-1955
