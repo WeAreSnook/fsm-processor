@@ -79,7 +79,7 @@ func extractConsentData(inputData InputData) map[int]bool {
 
 	// Consent data mapping claim number to entitled bool
 	consentData := make(map[int]bool)
-	for i := 0; i < int(consentSheet.MaxRow); i++ {
+	for i := 0; i <= int(consentSheet.MaxRow); i++ {
 		row := consentSheet.Row(i)
 		claimNumStr := strings.Replace(row.Col(2), "TEMP", "", 1)
 		claimNum, err := strconv.Atoi(claimNumStr)
