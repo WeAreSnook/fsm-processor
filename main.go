@@ -50,12 +50,12 @@ func main() {
 	output := Output{
 		Success:        true,
 		OutputFilePath: "none yet",
-		DebugData:      fmt.Sprintf("%d people extracted\n", len(store.people)),
+		DebugData:      fmt.Sprintf("%d people extracted", len(store.people)),
 	}
 	json, err := json.Marshal(output)
 	if err != nil {
 		log.Fatal("Error marshalling json from store")
 	}
 
-	fmt.Printf(string(json))
+	fmt.Println(string(json))
 }
