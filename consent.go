@@ -1,14 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"encoding/csv"
-	"io"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 
+	"github.com/addjam/fsm-processor/spreadsheet"
 	"github.com/extrame/xls"
 )
 
@@ -17,34 +14,22 @@ func ExtractPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 	consentByClaimNumber := extractConsentData(inputData)
 
 	// Parse benefits extract
-	benefitExtractFile, err := os.Open(inputData.benefitExtractPath)
-	defer benefitExtractFile.Close()
-	if err != nil {
-		log.Fatal("Error opening benefit extract")
-	}
-	benefitExtractReader := csv.NewReader(bufio.NewReader(benefitExtractFile))
-
-	// Skip column header row
-	_, err = benefitExtractReader.Read()
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	benefitExtractParser := spreadsheet.NewCsvParser(inputData.benefitExtractPath)
 
 	// Parse files
 	for {
-		line, err := benefitExtractReader.Read()
+		line, err := benefitExtractParser.Next()
 
-		if err == io.EOF {
+		if err == spreadsheet.ErrEOF {
 			break
 		} else if err != nil {
 			log.Fatal(err)
 		}
 
-		claimNumber, err := strconv.Atoi(line[0])
+		claimNumber, err := strconv.Atoi(line.Col(0))
 
 		if err != nil {
-			log.Printf("Error parsing claim number from benefits extract %s", line[0])
+			log.Printf("Error parsing claim number from benefits extract %s", line.Col(0))
 			continue
 		}
 
@@ -53,9 +38,9 @@ func ExtractPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 		if hasPermission {
 			peopleStore.Add(
 				Person{
-					forename:    line[4],
-					surname:     line[3],
-					claimNumber: line[0],
+					forename:    line.Col(4),
+					surname:     line.Col(3),
+					claimNumber: line.Col(0),
 					ageYears:    0,
 				},
 			)
