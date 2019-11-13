@@ -21,7 +21,7 @@ type XlsRow struct {
 }
 
 // NewXlsParser creates an XlsParser from a given file path
-func NewXlsParser(path string) XlsParser {
+func NewXlsParser(path string) *XlsParser {
 	workbook, closer, err := xls.OpenWithCloser(path, "utf-8")
 
 	if err != nil {
@@ -34,7 +34,7 @@ func NewXlsParser(path string) XlsParser {
 		log.Fatalf("Couldn't open sheet in xls: %s", path)
 	}
 
-	return XlsParser{
+	return &XlsParser{
 		workbook:   workbook,
 		sheet:      sheet,
 		closer:     closer,
@@ -42,8 +42,8 @@ func NewXlsParser(path string) XlsParser {
 	}
 }
 
-// Next returns the next XlsRow from the sheet
-func (p *XlsParser) Next() (XlsRow, error) {
+// Next returns the next Row from the sheet
+func (p *XlsParser) Next() (Row, error) {
 	nextRow := p.currentRow + 1
 	if nextRow > int(p.sheet.MaxRow) {
 		return XlsRow{}, ErrEOF
@@ -51,16 +51,15 @@ func (p *XlsParser) Next() (XlsRow, error) {
 
 	p.currentRow = nextRow
 	row := p.sheet.Row(nextRow)
-
 	return XlsRow{row}, nil
 }
 
 // Close closes the spreadsheet, making it unavailable for further operations
-func (p *XlsParser) Close() {
+func (p XlsParser) Close() {
 	p.closer.Close()
 }
 
 // Col returns the string in the specified column
-func (r *XlsRow) Col(index int) string {
-	return r.Col(index)
+func (r XlsRow) Col(index int) string {
+	return r.row.Col(index)
 }
