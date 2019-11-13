@@ -45,7 +45,7 @@ func main() {
 	}
 
 	ExtractPeopleWithConsent(inputData, &store)
-	RemoveHouseholdsWithoutChildren(&store)
+	RemoveHouseholdsWithoutChildren(inputData, &store)
 
 	// Temporary fake output data for integration with app
 	output := Output{
