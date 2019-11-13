@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
-	"github.com/extrame/xls"
 )
 
 // ExtractPeopleWithConsent parses which people have given consent to check entitlement data
@@ -14,7 +13,7 @@ func ExtractPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 	consentByClaimNumber := extractConsentData(inputData)
 
 	// Parse benefits extract
-	benefitExtractParser := spreadsheet.NewCsvParser(inputData.benefitExtractPath)
+	benefitExtractParser := spreadsheet.NewParser(inputData.benefitExtractPath)
 
 	// Parse files
 	for {
@@ -49,23 +48,20 @@ func ExtractPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 }
 
 func extractConsentData(inputData InputData) map[int]bool {
-	// Consent spreadsheet is used to determine which people on the benefit extract have given
-	// permission
-	consentFile, err := xls.Open(inputData.consent360Path, "utf-8")
-	if err != nil {
-		// TODO FailWithError() that prints json to stdout
-		log.Fatal(err)
-	}
-
-	consentSheet := consentFile.GetSheet(0)
-	if consentSheet == nil {
-		log.Fatal("Couldn't open sheet in consnet file")
-	}
+	consentParser := spreadsheet.NewParser(inputData.consent360Path)
 
 	// Consent data mapping claim number to entitled bool
 	consentData := make(map[int]bool)
-	for i := 0; i <= int(consentSheet.MaxRow); i++ {
-		row := consentSheet.Row(i)
+
+	for {
+		row, err := consentParser.Next()
+
+		if err == spreadsheet.ErrEOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
 		claimNumStr := strings.Replace(row.Col(2), "TEMP", "", 1)
 		claimNum, err := strconv.Atoi(claimNumStr)
 
