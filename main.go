@@ -44,8 +44,7 @@ func main() {
 		consent360Path:     "./private-data/Consent Report W360.xls",
 	}
 
-	ExtractPeopleWithConsent(inputData, &store)
-	RemoveHouseholdsWithoutChildren(inputData, &store)
+	AddPeopleWithConsent(inputData, &store)
 
 	// Temporary fake output data for integration with app
 	output := Output{

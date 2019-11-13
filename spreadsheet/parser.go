@@ -49,3 +49,27 @@ func NewParser(path string) Parser {
 
 	return nil
 }
+
+// EachParserRow maps over rows in a Parser
+// Automatically closes the parser
+func EachParserRow(p Parser, f func(Row)) {
+	defer p.Close()
+
+	for {
+		row, err := p.Next()
+
+		if err == ErrEOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		f(row)
+	}
+}
+
+// EachRow takes the path of a spreadsheet and maps over the row data
+func EachRow(path string, f func(Row)) {
+	parser := NewParser(path)
+	EachParserRow(parser, f)
+}
