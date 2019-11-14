@@ -9,6 +9,8 @@ import (
 )
 
 // AddPeopleWithConsent parses which people have given consent to check entitlement data
+// and adds them directly to the PeopleStore
+// Data sources: Consent 360 & Benefit Extract
 func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 	consentByClaimNumber := extractConsentData(inputData)
 
@@ -28,7 +30,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 				Person{
 					forename:    row.Col(4),
 					surname:     row.Col(3),
-					claimNumber: row.Col(0),
+					claimNumber: claimNumber,
 					ageYears:    0,
 				},
 			)

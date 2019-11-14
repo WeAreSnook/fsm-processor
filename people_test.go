@@ -21,7 +21,7 @@ func TestFindExisting(t *testing.T) {
 			t.Errorf("error searching for %#v", want)
 		}
 
-		if got != want {
+		if !got.IsSameAs(want) {
 			t.Errorf("got %#v, want %#v", got, want)
 		}
 	})
@@ -75,7 +75,7 @@ func TestUpdate(t *testing.T) {
 
 	t.Run("updates correct person", func(t *testing.T) {
 		updatedChrisDetails := Person{forename: "Christopher", surname: "Sloey", ageYears: 29}
-		err := store.Update(chris, updatedChrisDetails)
+		err := store.Update(updatedChrisDetails)
 
 		if err != nil {
 			t.Errorf("error updating user %#v", err)

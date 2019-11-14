@@ -45,6 +45,9 @@ func main() {
 	}
 
 	AddPeopleWithConsent(inputData, &store)
+	fmt.Printf("%d people with consent\n", len(store.people))
+	store.people = PeopleInHouseholdsWithChildren(inputData, store)
+	fmt.Printf("%d people after household check\n", len(store.people))
 
 	// Temporary fake output data for integration with app
 	output := Output{
