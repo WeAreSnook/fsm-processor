@@ -11,6 +11,7 @@ type XlsxParser struct {
 	file       *xlsx.File
 	sheet      *xlsx.Sheet
 	currentRow int
+	numRows    int
 }
 
 // XlsxRow is a spreadsheet.Row implementation for Xlsx files
@@ -31,13 +32,18 @@ func NewXlsxParser(path string) *XlsxParser {
 		log.Fatalf("No sheet in xlsx file: %s", path)
 	}
 
-	return &XlsxParser{file: xlFile, sheet: sheet, currentRow: 0}
+	return &XlsxParser{
+		file:       xlFile,
+		sheet:      sheet,
+		currentRow: 0,
+		numRows:    sheet.MaxRow,
+	}
 }
 
 // Next returns the next Row
 func (p *XlsxParser) Next() (Row, error) {
 	nextRow := p.currentRow + 1
-	if nextRow > int(p.sheet.MaxRow) {
+	if nextRow > p.numRows {
 		return XlsxRow{}, ErrEOF
 	}
 
@@ -54,6 +60,10 @@ func (p XlsxParser) Close() {
 
 // Col returns the string in the specified column
 func (r XlsxRow) Col(index int) string {
+	if index < 0 || index > len(r.row.Cells)-1 {
+		return ""
+	}
+
 	cell := r.row.Cells[index]
 	if cell == nil {
 		return ""
