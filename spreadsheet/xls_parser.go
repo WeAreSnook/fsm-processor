@@ -1,6 +1,7 @@
 package spreadsheet
 
 import (
+	"fmt"
 	"io"
 	"log"
 
@@ -13,10 +14,13 @@ type XlsParser struct {
 	sheet      *xls.WorkSheet
 	closer     io.Closer
 	currentRow int
+	headers    []string
+	hasHeaders bool
 }
 
 // XlsRow represents a row in an Xls sheet
 type XlsRow struct {
+	p   *XlsParser
 	row *xls.Row
 }
 
@@ -39,6 +43,7 @@ func NewXlsParser(path string) *XlsParser {
 		sheet:      sheet,
 		closer:     closer,
 		currentRow: 0,
+		hasHeaders: false,
 	}
 }
 
@@ -51,7 +56,7 @@ func (p *XlsParser) Next() (Row, error) {
 
 	p.currentRow = nextRow
 	row := p.sheet.Row(nextRow)
-	return XlsRow{row}, nil
+	return XlsRow{p, row}, nil
 }
 
 // Close closes the spreadsheet, making it unavailable for further operations
@@ -59,7 +64,31 @@ func (p XlsParser) Close() {
 	p.closer.Close()
 }
 
+// SetHeaderNames sets header names, allowing retrieval of columns by name
+func (p *XlsParser) SetHeaderNames(names []string) {
+	p.headers = names
+	p.hasHeaders = true
+}
+
 // Col returns the string in the specified column
 func (r XlsRow) Col(index int) string {
 	return r.row.Col(index)
+}
+
+// ColByName returns the string in the cell at the specified column
+//
+// NOTE: SetHeaderNames should be called to enable this, as Xls headers aren't
+// automatically parsed
+func (r XlsRow) ColByName(name string) string {
+	if !r.p.hasHeaders {
+		return ""
+	}
+
+	index := indexOf(r.p.headers, name)
+	fmt.Printf("Index is %d\n", index)
+	if index < 0 {
+		return ""
+	}
+
+	return r.Col(index)
 }

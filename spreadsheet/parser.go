@@ -19,11 +19,13 @@ var (
 type Parser interface {
 	Next() (Row, error)
 	Close()
+	SetHeaderNames([]string)
 }
 
 // Row refers to a row in a spreadsheet, which has many columns
 type Row interface {
 	Col(int) string
+	ColByName(string) string
 }
 
 // NewParser creates a parser appropriate for the spreadsheet at the given path.
@@ -38,7 +40,7 @@ func NewParser(path string) Parser {
 	case ".xls":
 		return NewXlsParser(path)
 	case ".xlsx":
-		return NewXlsxParser(path)
+		return NewXlsxParser(path, true)
 	case ".txt":
 		return NewCsvParser(path, true)
 	case ".csv":

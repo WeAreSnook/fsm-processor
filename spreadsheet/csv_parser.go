@@ -9,17 +9,20 @@ import (
 
 // CsvParser is a Parser implementation that handles CSVs
 type CsvParser struct {
-	file      *os.File
-	csvReader *csv.Reader
+	file       *os.File
+	csvReader  *csv.Reader
+	headers    []string
+	hasHeaders bool
 }
 
 // CsvRow represents a row in a CSV file
 type CsvRow struct {
+	p    *CsvParser
 	line []string
 }
 
 // NewCsvParser creates a CsvParser with the given path, opening the file and preparing it for reading
-func NewCsvParser(path string, hasHeader bool) *CsvParser {
+func NewCsvParser(path string, hasHeaders bool) *CsvParser {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("Error opening file: %s", path)
@@ -27,18 +30,22 @@ func NewCsvParser(path string, hasHeader bool) *CsvParser {
 	fileReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(fileReader)
 
-	if hasHeader {
+	var headers []string
+	if hasHeaders {
 		// Skip column header row
-		_, err = csvReader.Read()
-	}
+		line, err := csvReader.Read()
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	if err != nil {
-		log.Fatal(err)
+		headers = line
 	}
 
 	return &CsvParser{
-		file:      file,
-		csvReader: csvReader,
+		file:       file,
+		csvReader:  csvReader,
+		headers:    headers,
+		hasHeaders: hasHeaders,
 	}
 }
 
@@ -50,13 +57,19 @@ func (p *CsvParser) Next() (Row, error) {
 		return CsvRow{}, err
 	}
 
-	row := CsvRow{line}
+	row := CsvRow{p, line}
 	return row, err
 }
 
 // Close closes the CSV file. No further operations will be possible.
 func (p CsvParser) Close() {
 	p.file.Close()
+}
+
+// SetHeaderNames sets header names, allowing retrieval of columns by name
+func (p *CsvParser) SetHeaderNames(names []string) {
+	p.headers = names
+	p.hasHeaders = true
 }
 
 // SetSeparator changes the delimiter parsed in the provided file. Default is a comma.
@@ -71,4 +84,14 @@ func (r CsvRow) Col(index int) string {
 	}
 
 	return r.line[index]
+}
+
+// ColByName returns the string in the cell at the specified column
+func (r CsvRow) ColByName(name string) string {
+	index := indexOf(r.p.headers, name)
+	if index < 0 {
+		return ""
+	}
+
+	return r.Col(index)
 }
