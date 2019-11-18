@@ -20,7 +20,7 @@ func TestExtractPeopleWithConsent(t *testing.T) {
 	}
 
 	t.Run("finds the correct matches", func(t *testing.T) {
-		ExtractPeopleWithConsent(inputData, &store)
+		AddPeopleWithConsent(inputData, &store)
 
 		if len(store.people) != 3 {
 			t.Errorf("Expected 3 people in store, got %d", len(store.people))
