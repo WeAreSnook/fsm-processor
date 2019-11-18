@@ -19,7 +19,7 @@ type CsvRow struct {
 }
 
 // NewCsvParser creates a CsvParser with the given path, opening the file and preparing it for reading
-func NewCsvParser(path string) *CsvParser {
+func NewCsvParser(path string, hasHeader bool) *CsvParser {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("Error opening file: %s", path)
@@ -27,8 +27,10 @@ func NewCsvParser(path string) *CsvParser {
 	fileReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(fileReader)
 
-	// Skip column header row
-	_, err = csvReader.Read()
+	if hasHeader {
+		// Skip column header row
+		_, err = csvReader.Read()
+	}
 
 	if err != nil {
 		log.Fatal(err)
@@ -55,6 +57,11 @@ func (p *CsvParser) Next() (Row, error) {
 // Close closes the CSV file. No further operations will be possible.
 func (p CsvParser) Close() {
 	p.file.Close()
+}
+
+// SetSeparator changes the delimiter parsed in the provided file. Default is a comma.
+func (p CsvParser) SetSeparator(r rune) {
+	p.csvReader.Comma = r
 }
 
 // Col returns the string at the specified index from the CsvRow

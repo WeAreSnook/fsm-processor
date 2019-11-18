@@ -40,9 +40,9 @@ func NewParser(path string) Parser {
 	case ".xlsx":
 		return NewXlsxParser(path)
 	case ".txt":
-		return NewCsvParser(path)
+		return NewCsvParser(path, true)
 	case ".csv":
-		return NewCsvParser(path)
+		return NewCsvParser(path, true)
 	}
 
 	log.Fatalf("No parser for extension %s of file at path %s\n", extension, path)
@@ -50,7 +50,7 @@ func NewParser(path string) Parser {
 	return nil
 }
 
-// EachParserRow maps over rows in a Parser
+// EachParserRow calls func for each of the rows provided by a Parser
 // Automatically closes the parser
 func EachParserRow(p Parser, f func(Row)) {
 	defer p.Close()
@@ -68,7 +68,7 @@ func EachParserRow(p Parser, f func(Row)) {
 	}
 }
 
-// EachRow takes the path of a spreadsheet and maps over the row data
+// EachRow takes the path of a spreadsheet and executes the func once for each row
 func EachRow(path string, f func(Row)) {
 	parser := NewParser(path)
 	EachParserRow(parser, f)
