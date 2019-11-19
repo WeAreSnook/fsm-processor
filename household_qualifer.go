@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fsm-processor/people"
+	"github.com/addjam/fsm-processor/people"
 	"log"
 	"strconv"
 
@@ -14,7 +14,7 @@ import (
 func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []people.Person {
 	householdPeopleStore := people.Store{}
 
-	spreadsheet.EachRow(inputData.dependentsSHBEPath, func(row spreadsheet.Row) {
+	spreadsheet.EachRow(inputData.dependentsSHBE, func(row spreadsheet.Row) {
 		claimNumStr := row.Col(0)
 		if claimNumStr == "" {
 			return

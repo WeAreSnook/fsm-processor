@@ -39,13 +39,28 @@ func NewXlsParser(input ParserInput) *XlsParser {
 		log.Fatalf("Couldn't open sheet in xls: %s", input.Path)
 	}
 
-	return &XlsParser{
+	var headers []string
+	if input.HasHeaders {
+		headerRow := sheet.Row(0)
+		for i := 0; i <= headerRow.LastCol(); i++ {
+			cell := headerRow.Col(i)
+			headers = append(headers, cell)
+		}
+	}
+
+	parser := &XlsParser{
+		path:       input.Path,
 		workbook:   workbook,
 		sheet:      sheet,
 		closer:     closer,
 		currentRow: 0,
-		hasHeaders: false,
+		hasHeaders: input.HasHeaders,
+		headers:    headers,
 	}
+
+	AssertHeadersExist(parser, input.RequiredHeaders)
+
+	return parser
 }
 
 // Next returns the next Row from the sheet

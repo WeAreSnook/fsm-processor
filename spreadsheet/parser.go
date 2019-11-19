@@ -1,9 +1,10 @@
 package spreadsheet
 
 import (
-	"fsm-processor/people"
 	"log"
 	"path/filepath"
+
+	"github.com/addjam/fsm-processor/people"
 )
 
 // Parser is an interface for types that can parse a spreadsheet by Row
@@ -89,6 +90,8 @@ func formatFromExtension(ext string) Format {
 	case ".csv":
 		return Csv
 	}
+
+	return Csv
 }
 
 // EachParserRow calls func for each of the rows provided by a Parser

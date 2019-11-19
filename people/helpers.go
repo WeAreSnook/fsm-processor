@@ -30,9 +30,9 @@ func RespondWith(store Store, err error) {
 	fmt.Println(string(json))
 
 	if !output.Success {
-		os.Exit(0)
-	} else {
 		os.Exit(1)
+	} else {
+		os.Exit(0)
 	}
 }
 

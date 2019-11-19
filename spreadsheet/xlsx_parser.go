@@ -44,7 +44,7 @@ func NewXlsxParser(input ParserInput) *XlsxParser {
 		}
 	}
 
-	return &XlsxParser{
+	parser := &XlsxParser{
 		path:       input.Path,
 		file:       xlFile,
 		sheet:      sheet,
@@ -53,6 +53,10 @@ func NewXlsxParser(input ParserInput) *XlsxParser {
 		hasHeaders: input.HasHeaders,
 		headers:    headers,
 	}
+
+	AssertHeadersExist(parser, input.RequiredHeaders)
+
+	return parser
 }
 
 // Next returns the next Row
@@ -104,9 +108,6 @@ func (r XlsxRow) Col(index int) string {
 }
 
 // ColByName returns the string in the cell at the specified column
-//
-// NOTE: SetHeaderNames should be called to enable this, as Xlsx headers aren't
-// automatically parsed
 func (r XlsxRow) ColByName(name string) string {
 	if !r.p.hasHeaders {
 		return "noheaders"

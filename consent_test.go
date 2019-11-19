@@ -1,8 +1,10 @@
 package main
 
 import (
-	"fsm-processor/people"
 	"testing"
+
+	"github.com/addjam/fsm-processor/people"
+	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
 func TestExtractPeopleWithConsent(t *testing.T) {
@@ -14,12 +16,12 @@ func TestExtractPeopleWithConsent(t *testing.T) {
 		rolloverMode:       false,
 		benefitAmountPence: 61000, // £610
 
-		benefitExtractPath: "./testdata/Benefit Extract_06_09_19.txt",
-		dependentsSHBEPath: "./testdata/dependants SHBE_06-09-19-2.xlsx",
-		hbucdPath:          "./testdata/hb-uc.d-06-09-19.txt",
-		fsmCgAwardsPath:    "./testdata/FSM&CGawards_06-09-19.xlsx",
-		schoolRollPath:     "./testdata/School Roll Pupil Data_06-09-19-2.xlsx",
-		consent360Path:     "./testdata/Consent Report W360.xls",
+		benefitExtract: spreadsheet.ParserInput{Path: "./testdata/Benefit Extract_06_09_19.txt"},
+		dependentsSHBE: spreadsheet.ParserInput{Path: "./testdata/dependants SHBE_06-09-19-2.xlsx"},
+		hbucd:          spreadsheet.ParserInput{Path: "./testdata/hb-uc.d-06-09-19.txt"},
+		fsmCgAwards:    spreadsheet.ParserInput{Path: "./testdata/FSM&CGawards_06-09-19.xlsx"},
+		schoolRoll:     spreadsheet.ParserInput{Path: "./testdata/School Roll Pupil Data_06-09-19-2.xlsx"},
+		consent360:     spreadsheet.ParserInput{Path: "./testdata/Consent Report W360.xls"},
 	}
 
 	t.Run("finds the correct matches", func(t *testing.T) {

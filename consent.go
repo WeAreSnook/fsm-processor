@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fsm-processor/people"
+	"github.com/addjam/fsm-processor/people"
 	"log"
 	"strconv"
 	"strings"
@@ -16,7 +16,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
 	consentByClaimNumber := extractConsentData(inputData)
 
 	// Parse benefits extract
-	spreadsheet.EachRow(inputData.benefitExtractPath, func(row spreadsheet.Row) {
+	spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
 		claimNumber, err := strconv.Atoi(row.Col(0))
 
 		if err != nil {
@@ -42,7 +42,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
 func extractConsentData(inputData InputData) map[int]bool {
 	consentData := make(map[int]bool)
 
-	spreadsheet.EachRow(inputData.consent360Path, func(row spreadsheet.Row) {
+	spreadsheet.EachRow(inputData.consent360, func(row spreadsheet.Row) {
 		claimNumStr := strings.Replace(row.Col(2), "TEMP", "", 1)
 		claimNum, err := strconv.Atoi(claimNumStr)
 

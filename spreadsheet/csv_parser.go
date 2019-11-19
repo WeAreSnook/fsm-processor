@@ -42,13 +42,17 @@ func NewCsvParser(input ParserInput) *CsvParser {
 		headers = line
 	}
 
-	return &CsvParser{
+	parser := &CsvParser{
 		path:       input.Path,
 		file:       file,
 		csvReader:  csvReader,
 		headers:    headers,
 		hasHeaders: input.HasHeaders,
 	}
+
+	AssertHeadersExist(parser, input.RequiredHeaders)
+
+	return parser
 }
 
 // Next returns the next Row from the file, or errors if for example we reached the end
