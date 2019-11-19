@@ -1,9 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
+	"fsm-processor/people"
 )
 
 // InputData represents all options and files received
@@ -21,16 +20,8 @@ type InputData struct {
 	consent360Path     string // .xls
 }
 
-// Output represents the result data
-type Output struct {
-	Success        bool   `json:"success"`
-	OutputFilePath string `json:"output_file_path"`
-	DebugData      string `json:"debug,omitempty"`
-	Error          string `json:"error,omitempty"`
-}
-
 func main() {
-	store := PeopleStore{}
+	store := people.Store{}
 
 	inputData := InputData{
 		rolloverMode:       false,
@@ -45,20 +36,9 @@ func main() {
 	}
 
 	AddPeopleWithConsent(inputData, &store)
-	fmt.Printf("%d people with consent\n", len(store.people))
-	store.people = PeopleInHouseholdsWithChildren(inputData, store)
-	fmt.Printf("%d people after household check\n", len(store.people))
+	fmt.Printf("%d people with consent\n", len(store.People))
+	store.People = PeopleInHouseholdsWithChildren(inputData, store)
+	fmt.Printf("%d people after household check\n", len(store.People))
 
-	// Temporary fake output data for integration with app
-	output := Output{
-		Success:        true,
-		OutputFilePath: "none yet",
-		DebugData:      fmt.Sprintf("%d people extracted", len(store.people)),
-	}
-	json, err := json.Marshal(output)
-	if err != nil {
-		log.Fatal("Error marshalling json from store")
-	}
-
-	fmt.Println(string(json))
+	people.RespondWith(store, nil)
 }

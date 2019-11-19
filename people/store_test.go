@@ -1,13 +1,13 @@
-package main
+package people
 
 import "testing"
 
 func TestFindExisting(t *testing.T) {
-	chris := Person{forename: "Chris", surname: "Sloey", ageYears: 29}
-	michael := Person{forename: "Michael", surname: "Hayes", ageYears: 31}
+	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
+	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
 
-	store := PeopleStore{
-		people: []Person{
+	store := Store{
+		People: []Person{
 			chris,
 			michael,
 		},
@@ -15,7 +15,7 @@ func TestFindExisting(t *testing.T) {
 
 	t.Run("finds the correct person", func(t *testing.T) {
 		want := chris
-		got, err := store.FindExisting(Person{forename: chris.forename, surname: chris.surname})
+		got, err := store.FindExisting(Person{Forename: chris.Forename, Surname: chris.Surname})
 
 		if err != nil {
 			t.Errorf("error searching for %#v", want)
@@ -27,7 +27,7 @@ func TestFindExisting(t *testing.T) {
 	})
 
 	t.Run("error when person doesn't exist", func(t *testing.T) {
-		unknownPerson := Person{forename: "Doesn't", surname: "Exist"}
+		unknownPerson := Person{Forename: "Doesn't", Surname: "Exist"}
 		_, err := store.FindExisting(unknownPerson)
 
 		if err == nil {
@@ -37,12 +37,12 @@ func TestFindExisting(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	chris := Person{forename: "Chris", surname: "Sloey", ageYears: 29}
-	michael := Person{forename: "Michael", surname: "Hayes", ageYears: 31}
-	newPerson := Person{forename: "Bob", surname: "WOW", ageYears: 92}
+	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
+	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
+	newPerson := Person{Forename: "Bob", Surname: "WOW", AgeYears: 92}
 
-	store := PeopleStore{
-		people: []Person{
+	store := Store{
+		People: []Person{
 			chris,
 			michael,
 		},
@@ -63,18 +63,18 @@ func TestAdd(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	chris := Person{forename: "Chris", surname: "Sloey", ageYears: 29}
-	michael := Person{forename: "Michael", surname: "Hayes", ageYears: 31}
+	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
+	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
 
-	store := PeopleStore{
-		people: []Person{
+	store := Store{
+		People: []Person{
 			chris,
 			michael,
 		},
 	}
 
 	t.Run("updates correct person", func(t *testing.T) {
-		updatedChrisDetails := Person{forename: "Christopher", surname: "Sloey", ageYears: 29}
+		updatedChrisDetails := Person{Forename: "Christopher", Surname: "Sloey", AgeYears: 29}
 		err := store.Update(updatedChrisDetails)
 
 		if err != nil {

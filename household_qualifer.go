@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fsm-processor/people"
 	"log"
 	"strconv"
 
@@ -10,8 +11,8 @@ import (
 // PeopleInHouseholdsWithChildren returns only the people in the store that belong to households
 // which have children, with those children added as dependants.
 // Data Source: SHBE
-func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Person {
-	householdPeopleStore := PeopleStore{}
+func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []people.Person {
+	householdPeopleStore := people.Store{}
 
 	spreadsheet.EachRow(inputData.dependentsSHBEPath, func(row spreadsheet.Row) {
 		claimNumStr := row.Col(0)
@@ -28,10 +29,10 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Pe
 		// Check our local store, fall back to the overall store
 		person, err := householdPeopleStore.FindByClaimNumber(claimNumber)
 		alreadyAdded := err == nil
-		if err == ErrPersonNotFound {
+		if err == people.ErrPersonNotFound {
 			person, err = store.FindByClaimNumber(claimNumber)
 
-			if err == ErrPersonNotFound {
+			if err == people.ErrPersonNotFound {
 				return
 			}
 		}
@@ -41,11 +42,11 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Pe
 			log.Fatalf("Unable to parse age %d\n", age)
 		}
 
-		dependent := Dependent{
-			forename: row.Col(3),
-			surname:  row.Col(2),
-			ageYears: age,
-			dob:      row.Col(4),
+		dependent := people.Dependent{
+			Forename: row.Col(3),
+			Surname:  row.Col(2),
+			AgeYears: age,
+			Dob:      row.Col(4),
 		}
 		person.AddDependent(dependent)
 
@@ -56,5 +57,5 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Pe
 		}
 	})
 
-	return householdPeopleStore.people
+	return householdPeopleStore.People
 }

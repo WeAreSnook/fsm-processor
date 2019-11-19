@@ -1,10 +1,13 @@
 package main
 
-import "testing"
+import (
+	"fsm-processor/people"
+	"testing"
+)
 
 func TestExtractPeopleWithConsent(t *testing.T) {
-	store := PeopleStore{
-		people: []Person{},
+	store := people.Store{
+		People: []people.Person{},
 	}
 
 	inputData := InputData{
@@ -22,8 +25,8 @@ func TestExtractPeopleWithConsent(t *testing.T) {
 	t.Run("finds the correct matches", func(t *testing.T) {
 		AddPeopleWithConsent(inputData, &store)
 
-		if len(store.people) != 3 {
-			t.Errorf("Expected 3 people in store, got %d", len(store.people))
+		if len(store.People) != 3 {
+			t.Errorf("Expected 3 people in store, got %d", len(store.People))
 		}
 	})
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fsm-processor/people"
 	"log"
 	"strconv"
 	"strings"
@@ -11,7 +12,7 @@ import (
 // AddPeopleWithConsent parses which people have given consent to check entitlement data
 // and adds them directly to the PeopleStore
 // Data sources: Consent 360 & Benefit Extract
-func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
+func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
 	consentByClaimNumber := extractConsentData(inputData)
 
 	// Parse benefits extract
@@ -27,11 +28,11 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 
 		if hasPermission {
 			peopleStore.Add(
-				Person{
-					forename:    row.Col(4),
-					surname:     row.Col(3),
-					claimNumber: claimNumber,
-					ageYears:    0,
+				people.Person{
+					Forename:    row.Col(4),
+					Surname:     row.Col(3),
+					ClaimNumber: claimNumber,
+					AgeYears:    0,
 				},
 			)
 		}
