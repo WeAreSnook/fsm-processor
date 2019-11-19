@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"fsm-processor/people"
+	"fsm-processor/spreadsheet"
 )
 
 // InputData represents all options and files received
@@ -12,12 +13,12 @@ type InputData struct {
 	benefitAmountPence int
 
 	// File paths
-	benefitExtractPath string // .txt (formatted as CSV)
-	dependentsSHBEPath string // .xlsx
-	hbucdPath          string // .txt (formatted as CSV)
-	fsmCgAwardsPath    string // .xlsx
-	schoolRollPath     string // .xlsx
-	consent360Path     string // .xls
+	benefitExtractPath spreadsheet.ParserInput // .txt (formatted as CSV)
+	dependentsSHBEPath spreadsheet.ParserInput // .xlsx
+	hbucdPath          spreadsheet.ParserInput // .txt (formatted as CSV)
+	fsmCgAwardsPath    spreadsheet.ParserInput // .xlsx
+	schoolRollPath     spreadsheet.ParserInput // .xlsx
+	consent360Path     spreadsheet.ParserInput // .xls
 }
 
 func main() {
@@ -27,12 +28,36 @@ func main() {
 		rolloverMode:       false,
 		benefitAmountPence: 61000, // £610
 
-		benefitExtractPath: "./private-data/Benefit Extract_06-09-19.txt",
-		dependentsSHBEPath: "./private-data/dependants SHBE_06-09-19-2.xlsx",
-		hbucdPath:          "./private-data/hb-uc.d-06-09-19.txt",
-		fsmCgAwardsPath:    "./private-data/FSM&CGawards_06-09-19.xlsx",
-		schoolRollPath:     "./private-data/School Roll Pupil Data_06-09-19-2.xlsx",
-		consent360Path:     "./private-data/Consent Report W360.xls",
+		benefitExtractPath: spreadsheet.ParserInput{
+			Path:       "./private-data/Benefit Extract_06-09-19.txt",
+			HasHeaders: true,
+			RequiredHeaders: []string{
+				"DocDesc",
+				"DocDate",
+				"CLAIMREFERENCE",
+			},
+		},
+		dependentsSHBEPath: spreadsheet.ParserInput{
+			Path:       "./private-data/dependants SHBE_06-09-19-2.xlsx",
+			HasHeaders: true,
+		},
+		hbucdPath: spreadsheet.ParserInput{
+			Path:       "./private-data/hb-uc.d-06-09-19.txt",
+			HasHeaders: false,
+			Format:     spreadsheet.Ssv,
+		},
+		fsmCgAwardsPath: spreadsheet.ParserInput{
+			Path:       "./private-data/FSM&CGawards_06-09-19.xlsx",
+			HasHeaders: true,
+		},
+		schoolRollPath: spreadsheet.ParserInput{
+			Path:       "./private-data/School Roll Pupil Data_06-09-19-2.xlsx",
+			HasHeaders: true,
+		},
+		consent360Path: spreadsheet.ParserInput{
+			Path:       "./private-data/Consent Report W360.xls",
+			HasHeaders: true,
+		},
 	}
 
 	AddPeopleWithConsent(inputData, &store)

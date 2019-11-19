@@ -4,7 +4,10 @@ import "testing"
 
 func TestCsvNext(t *testing.T) {
 	t.Run("Parses space sparated files correctly", func(t *testing.T) {
-		parser := NewCsvParser("./testdata/space separated.txt", false)
+		input := ParserInput{
+			Path: "./testdata/space separated.txt",
+		}
+		parser := NewCsvParser(input)
 		parser.SetSeparator(' ')
 
 		row, err := parser.Next()
@@ -30,7 +33,7 @@ func TestCsvNext(t *testing.T) {
 	})
 
 	t.Run("Allows retrieval of column data by name", func(t *testing.T) {
-		parser := NewCsvParser("./testdata/csv with headers.txt", true)
+		parser := NewCsvParser(ParserInput{Path: "./testdata/csv with headers.txt"})
 
 		row, err := parser.Next()
 		if err != nil {

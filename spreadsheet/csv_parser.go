@@ -9,6 +9,7 @@ import (
 
 // CsvParser is a Parser implementation that handles CSVs
 type CsvParser struct {
+	path       string
 	file       *os.File
 	csvReader  *csv.Reader
 	headers    []string
@@ -22,16 +23,16 @@ type CsvRow struct {
 }
 
 // NewCsvParser creates a CsvParser with the given path, opening the file and preparing it for reading
-func NewCsvParser(path string, hasHeaders bool) *CsvParser {
-	file, err := os.Open(path)
+func NewCsvParser(input ParserInput) *CsvParser {
+	file, err := os.Open(input.Path)
 	if err != nil {
-		log.Fatalf("Error opening file: %s", path)
+		log.Fatalf("Error opening file: %s", input.Path)
 	}
 	fileReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(fileReader)
 
 	var headers []string
-	if hasHeaders {
+	if input.HasHeaders {
 		// Skip column header row
 		line, err := csvReader.Read()
 		if err != nil {
@@ -42,10 +43,11 @@ func NewCsvParser(path string, hasHeaders bool) *CsvParser {
 	}
 
 	return &CsvParser{
+		path:       input.Path,
 		file:       file,
 		csvReader:  csvReader,
 		headers:    headers,
-		hasHeaders: hasHeaders,
+		hasHeaders: input.HasHeaders,
 	}
 }
 
@@ -75,6 +77,16 @@ func (p *CsvParser) SetHeaderNames(names []string) {
 // SetSeparator changes the delimiter parsed in the provided file. Default is a comma.
 func (p CsvParser) SetSeparator(r rune) {
 	p.csvReader.Comma = r
+}
+
+// Headers returns the headers found or set on the current parsed file
+func (p CsvParser) Headers() []string {
+	return p.headers
+}
+
+// Path returns the path used for the file being parsed
+func (p CsvParser) Path() string {
+	return p.path
 }
 
 // Col returns the string at the specified index from the CsvRow

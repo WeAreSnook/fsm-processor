@@ -1,18 +1,9 @@
 package spreadsheet
 
 import (
-	"errors"
-	"io"
+	"fsm-processor/people"
 	"log"
 	"path/filepath"
-)
-
-var (
-	// ErrEOF is returned when the parser has reached the end of the file
-	ErrEOF = io.EOF
-
-	// ErrColumnOutOfBounds is returned when the given column index is too low or too high
-	ErrColumnOutOfBounds = errors.New("Given column is out of bounds")
 )
 
 // Parser is an interface for types that can parse a spreadsheet by Row
@@ -20,6 +11,8 @@ type Parser interface {
 	Next() (Row, error)
 	Close()
 	SetHeaderNames([]string)
+	Headers() []string
+	Path() string
 }
 
 // Row refers to a row in a spreadsheet, which has many columns
@@ -28,28 +21,74 @@ type Row interface {
 	ColByName(string) string
 }
 
+// Format represents the format of the spreadsheete, e.g. xls, csv, etc
+type Format int
+
+const (
+	// Auto to auto-detect the format. Based on extension and supports xls, xlsx and falls back to csv
+	Auto = iota
+
+	// Csv is CSV format
+	Csv Format = iota
+
+	// Ssv is space spearated
+	Ssv = iota
+
+	// Xls is Xls excel files, from excel up to 2004
+	Xls = iota
+
+	// Xlsx is a modern xlsx excel file
+	Xlsx = iota
+)
+
+//ParserInput represents a spreadsheet and associated options/validations
+type ParserInput struct {
+	Path            string
+	HasHeaders      bool
+	RequiredHeaders []string
+	Format          Format
+}
+
 // NewParser creates a parser appropriate for the spreadsheet at the given path.
 // Supports:
 //   - CSV
 //   - xls
 //   - xlsx
-func NewParser(path string) Parser {
-	extension := filepath.Ext(path)
+func NewParser(input ParserInput) Parser {
 
-	switch extension {
-	case ".xls":
-		return NewXlsParser(path)
-	case ".xlsx":
-		return NewXlsxParser(path, true)
-	case ".txt":
-		return NewCsvParser(path, true)
-	case ".csv":
-		return NewCsvParser(path, true)
+	inputFormat := input.Format
+	if inputFormat == Auto {
+		extension := filepath.Ext(input.Path)
+		inputFormat = formatFromExtension(extension)
 	}
 
-	log.Fatalf("No parser for extension %s of file at path %s\n", extension, path)
+	switch inputFormat {
+	case Xls:
+		return NewXlsParser(input)
+	case Xlsx:
+		return NewXlsxParser(input)
+	case Csv:
+		return NewCsvParser(input)
+	case Ssv:
+		return NewCsvParser(input)
+	}
+
+	log.Fatalf("No parser for file at path %s\n", input.Path)
 
 	return nil
+}
+
+func formatFromExtension(ext string) Format {
+	switch ext {
+	case ".xls":
+		return Xls
+	case ".xlsx":
+		return Xlsx
+	case ".txt":
+		return Csv
+	case ".csv":
+		return Csv
+	}
 }
 
 // EachParserRow calls func for each of the rows provided by a Parser
@@ -71,7 +110,17 @@ func EachParserRow(p Parser, f func(Row)) {
 }
 
 // EachRow takes the path of a spreadsheet and executes the func once for each row
-func EachRow(path string, f func(Row)) {
-	parser := NewParser(path)
+func EachRow(input ParserInput, f func(Row)) {
+	parser := NewParser(input)
 	EachParserRow(parser, f)
+}
+
+// AssertHeadersExist ensures the provided headers exist and exits if they don't
+func AssertHeadersExist(p Parser, expectedHeaders []string) {
+	for _, hdr := range expectedHeaders {
+		if indexOf(p.Headers(), hdr) < 0 {
+			people.RespondWith(people.Store{}, &ErrMissingHeader{filePath: p.Path(), header: hdr})
+			return
+		}
+	}
 }

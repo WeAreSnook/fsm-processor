@@ -4,7 +4,7 @@ import "testing"
 
 func TestXlsxNext(t *testing.T) {
 	t.Run("Allows retrieval of column data by name", func(t *testing.T) {
-		parser := NewXlsxParser("./testdata/Consent Report W360.xlsx", true)
+		parser := NewXlsxParser(ParserInput{Path: "./testdata/Consent Report W360.xlsx", HasHeaders: true})
 
 		row, err := parser.Next()
 		if err != nil {

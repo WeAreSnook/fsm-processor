@@ -8,6 +8,7 @@ import (
 
 // XlsxParser is a spreadsheet.Parser implementation for Xlsx files
 type XlsxParser struct {
+	path       string
 	file       *xlsx.File
 	sheet      *xlsx.Sheet
 	currentRow int
@@ -23,20 +24,20 @@ type XlsxRow struct {
 }
 
 // NewXlsxParser returns an XlsxParser for the file at the given path
-func NewXlsxParser(path string, hasHeaders bool) *XlsxParser {
-	xlFile, err := xlsx.OpenFile(path)
+func NewXlsxParser(input ParserInput) *XlsxParser {
+	xlFile, err := xlsx.OpenFile(input.Path)
 	if err != nil {
-		log.Fatalf("Error opening xlsx file: %s", path)
+		log.Fatalf("Error opening xlsx file: %s", input.Path)
 	}
 
 	sheet := xlFile.Sheets[0]
 
 	if sheet == nil {
-		log.Fatalf("No sheet in xlsx file: %s", path)
+		log.Fatalf("No sheet in xlsx file: %s", input.Path)
 	}
 
 	var headers []string
-	if hasHeaders {
+	if input.HasHeaders {
 		headerRow := sheet.Row(0)
 		for _, cell := range headerRow.Cells {
 			headers = append(headers, cell.String())
@@ -44,11 +45,12 @@ func NewXlsxParser(path string, hasHeaders bool) *XlsxParser {
 	}
 
 	return &XlsxParser{
+		path:       input.Path,
 		file:       xlFile,
 		sheet:      sheet,
 		currentRow: 0,
 		numRows:    sheet.MaxRow,
-		hasHeaders: hasHeaders,
+		hasHeaders: input.HasHeaders,
 		headers:    headers,
 	}
 }
@@ -75,6 +77,16 @@ func (p XlsxParser) Close() {
 func (p *XlsxParser) SetHeaderNames(names []string) {
 	p.headers = names
 	p.hasHeaders = true
+}
+
+// Headers returns the headers found or set on the current parsed file
+func (p XlsxParser) Headers() []string {
+	return p.headers
+}
+
+// Path returns the path used for the file being parsed
+func (p XlsxParser) Path() string {
+	return p.path
 }
 
 // Col returns the string in the specified column

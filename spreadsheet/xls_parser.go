@@ -10,6 +10,7 @@ import (
 
 // XlsParser is a Parser implementation that handles xls spreadsheets
 type XlsParser struct {
+	path       string
 	workbook   *xls.WorkBook
 	sheet      *xls.WorkSheet
 	closer     io.Closer
@@ -25,8 +26,8 @@ type XlsRow struct {
 }
 
 // NewXlsParser creates an XlsParser from a given file path
-func NewXlsParser(path string) *XlsParser {
-	workbook, closer, err := xls.OpenWithCloser(path, "utf-8")
+func NewXlsParser(input ParserInput) *XlsParser {
+	workbook, closer, err := xls.OpenWithCloser(input.Path, "utf-8")
 
 	if err != nil {
 		// TODO FailWithError() that prints json to stdout
@@ -35,7 +36,7 @@ func NewXlsParser(path string) *XlsParser {
 
 	sheet := workbook.GetSheet(0)
 	if sheet == nil {
-		log.Fatalf("Couldn't open sheet in xls: %s", path)
+		log.Fatalf("Couldn't open sheet in xls: %s", input.Path)
 	}
 
 	return &XlsParser{
@@ -68,6 +69,16 @@ func (p XlsParser) Close() {
 func (p *XlsParser) SetHeaderNames(names []string) {
 	p.headers = names
 	p.hasHeaders = true
+}
+
+// Headers returns the headers found or set on the current parsed file
+func (p XlsParser) Headers() []string {
+	return p.headers
+}
+
+// Path returns the path used for the file being parsed
+func (p XlsParser) Path() string {
+	return p.path
 }
 
 // Col returns the string in the specified column
