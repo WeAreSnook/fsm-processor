@@ -31,6 +31,47 @@ func main() {
 		benefitExtract: spreadsheet.ParserInput{
 			Path:       "./private-data/Benefit Extract_06-09-19.txt",
 			HasHeaders: true,
+			RequiredHeaders: []string{
+				// Tax credit step one
+				"Clmt Personal Pension",
+				"Clmt State Retirement Pension (incl SERP's graduated pension etc)",
+				"Ptnr Personal Pension",
+				"Ptnr State Retirement Pension (incl SERP's graduated pension etc)",
+				"Clmt Occupational Pension",
+				"Ptnr Occupational Pension",
+
+				// Tax credit step two
+				"Clmt AIF",
+				"Clmt Employment (gross)",
+				"Clmt Self-employment (gross)",
+				"Clmt Student Grant/Loan",
+				"Clmt Sub-tenants",
+				"Clmt Boarders",
+				"Clmt Government Training",
+				"Clmt Statutory Sick Pay",
+				"Clmt Widowed Parent's Allowance",
+				"Clmt Apprenticeship",
+				"Clmt Statutory Sick Pay",
+				"Other weekly Income including In-Work Credit",
+				"Ptnr AIF",
+				"Ptnr Employment (gross)",
+				"Ptnr Self-employment (gross)",
+				"Ptnr Student Grant/Loan",
+				"Ptnr Sub-tenants",
+				"Ptnr Boarders",
+				"Ptnr Training for Work/Community Action",
+				"Ptnr New Deal 50+ Employment Credit",
+				"Ptnr Government Training",
+				"Ptnr Carer's Allowance",
+				"Ptnr Statutory Sick Pay",
+				"Ptnr Widowed Parent's Allowance",
+				"Ptnr Apprenticeship",
+				"Other weekly Income including In-Work Credit",
+				"Clmt Savings Credit",
+				"Ptnr Savings Credit",
+				"Clmt Widows Benefit",
+				"Ptnr Widows Benefit",
+			},
 		},
 		dependentsSHBE: spreadsheet.ParserInput{
 			Path:       "./private-data/dependants SHBE_06-09-19-2.xlsx",
@@ -73,6 +114,8 @@ func main() {
 		return
 	}
 	fmt.Printf("%d people after household check\n", len(store.People))
+
+	PeopleWithQualifyingIncomes(inputData, store)
 
 	RespondWith(&store, nil)
 }
