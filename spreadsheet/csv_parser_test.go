@@ -33,7 +33,7 @@ func TestCsvNext(t *testing.T) {
 	})
 
 	t.Run("Allows retrieval of column data by name", func(t *testing.T) {
-		parser := NewCsvParser(ParserInput{Path: "./testdata/csv with headers.txt"})
+		parser := NewCsvParser(ParserInput{Path: "./testdata/csv with headers.txt", HasHeaders: true})
 
 		row, err := parser.Next()
 		if err != nil {
