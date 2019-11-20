@@ -10,10 +10,10 @@ import (
 // PeopleInHouseholdsWithChildren returns only the people in the store that belong to households
 // which have children, with those children added as dependants.
 // Data Source: SHBE
-func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Person {
+func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) ([]Person, error) {
 	householdPeopleStore := PeopleStore{}
 
-	spreadsheet.EachRow(inputData.dependentsSHBE, func(row spreadsheet.Row) {
+	err := spreadsheet.EachRow(inputData.dependentsSHBE, func(row spreadsheet.Row) {
 		claimNumStr := row.Col(0)
 		if claimNumStr == "" {
 			return
@@ -56,5 +56,5 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Pe
 		}
 	})
 
-	return householdPeopleStore.People
+	return householdPeopleStore.People, err
 }

@@ -1,8 +1,6 @@
 package spreadsheet
 
 import (
-	"log"
-
 	"github.com/tealeg/xlsx"
 )
 
@@ -24,16 +22,16 @@ type XlsxRow struct {
 }
 
 // NewXlsxParser returns an XlsxParser for the file at the given path
-func NewXlsxParser(input ParserInput) *XlsxParser {
+func NewXlsxParser(input ParserInput) (*XlsxParser, error) {
 	xlFile, err := xlsx.OpenFile(input.Path)
 	if err != nil {
-		log.Fatalf("Error opening xlsx file: %s", input.Path)
+		return nil, ErrUnableToParse{input.Path}
 	}
 
 	sheet := xlFile.Sheets[0]
 
 	if sheet == nil {
-		log.Fatalf("No sheet in xlsx file: %s", input.Path)
+		return nil, ErrUnableToParse{input.Path}
 	}
 
 	var headers []string
@@ -54,9 +52,9 @@ func NewXlsxParser(input ParserInput) *XlsxParser {
 		headers:    headers,
 	}
 
-	AssertHeadersExist(parser, input.RequiredHeaders)
+	err = AssertHeadersExist(parser, input.RequiredHeaders)
 
-	return parser
+	return parser, err
 }
 
 // Next returns the next Row

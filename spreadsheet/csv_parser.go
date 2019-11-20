@@ -3,7 +3,6 @@ package spreadsheet
 import (
 	"bufio"
 	"encoding/csv"
-	"log"
 	"os"
 )
 
@@ -23,11 +22,12 @@ type CsvRow struct {
 }
 
 // NewCsvParser creates a CsvParser with the given path, opening the file and preparing it for reading
-func NewCsvParser(input ParserInput) *CsvParser {
+func NewCsvParser(input ParserInput) (*CsvParser, error) {
 	file, err := os.Open(input.Path)
 	if err != nil {
-		log.Fatalf("Error opening file: %s", input.Path)
+		return nil, ErrUnknownFormat{filePath: input.Path}
 	}
+
 	fileReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(fileReader)
 
@@ -36,7 +36,7 @@ func NewCsvParser(input ParserInput) *CsvParser {
 		// Skip column header row
 		line, err := csvReader.Read()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		headers = line
@@ -50,9 +50,9 @@ func NewCsvParser(input ParserInput) *CsvParser {
 		hasHeaders: input.HasHeaders,
 	}
 
-	AssertHeadersExist(parser, input.RequiredHeaders)
+	err = AssertHeadersExist(parser, input.RequiredHeaders)
 
-	return parser
+	return parser, err
 }
 
 // Next returns the next Row from the file, or errors if for example we reached the end

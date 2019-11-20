@@ -3,8 +3,6 @@ package spreadsheet
 import (
 	"log"
 	"path/filepath"
-
-	"github.com/addjam/fsm-processor/people"
 )
 
 // Parser is an interface for types that can parse a spreadsheet by Row
@@ -55,7 +53,7 @@ type ParserInput struct {
 //   - CSV
 //   - xls
 //   - xlsx
-func NewParser(input ParserInput) Parser {
+func NewParser(input ParserInput) (Parser, error) {
 
 	inputFormat := input.Format
 	if inputFormat == Auto {
@@ -74,9 +72,7 @@ func NewParser(input ParserInput) Parser {
 		return NewCsvParser(input)
 	}
 
-	log.Fatalf("No parser for file at path %s\n", input.Path)
-
-	return nil
+	return nil, nil
 }
 
 func formatFromExtension(ext string) Format {
@@ -113,17 +109,24 @@ func EachParserRow(p Parser, f func(Row)) {
 }
 
 // EachRow takes the path of a spreadsheet and executes the func once for each row
-func EachRow(input ParserInput, f func(Row)) {
-	parser := NewParser(input)
+func EachRow(input ParserInput, f func(Row)) error {
+	parser, err := NewParser(input)
+	if err != nil {
+		return err
+	}
+
 	EachParserRow(parser, f)
+
+	return nil
 }
 
 // AssertHeadersExist ensures the provided headers exist and exits if they don't
-func AssertHeadersExist(p Parser, expectedHeaders []string) {
+func AssertHeadersExist(p Parser, expectedHeaders []string) error {
 	for _, hdr := range expectedHeaders {
 		if indexOf(p.Headers(), hdr) < 0 {
-			people.RespondWith(people.Store{}, &ErrMissingHeader{filePath: p.Path(), header: hdr})
-			return
+			return ErrMissingHeader{filePath: p.Path(), header: hdr}
 		}
 	}
+
+	return nil
 }

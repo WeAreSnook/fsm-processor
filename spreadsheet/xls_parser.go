@@ -2,7 +2,6 @@ package spreadsheet
 
 import (
 	"io"
-	"log"
 
 	"github.com/extrame/xls"
 )
@@ -25,17 +24,15 @@ type XlsRow struct {
 }
 
 // NewXlsParser creates an XlsParser from a given file path
-func NewXlsParser(input ParserInput) *XlsParser {
+func NewXlsParser(input ParserInput) (*XlsParser, error) {
 	workbook, closer, err := xls.OpenWithCloser(input.Path, "utf-8")
-
 	if err != nil {
-		// TODO FailWithError() that prints json to stdout
-		log.Fatal(err)
+		return nil, err
 	}
 
 	sheet := workbook.GetSheet(0)
 	if sheet == nil {
-		log.Fatalf("Couldn't open sheet in xls: %s", input.Path)
+		return nil, ErrUnableToParse{input.Path}
 	}
 
 	var headers []string
@@ -57,9 +54,9 @@ func NewXlsParser(input ParserInput) *XlsParser {
 		headers:    headers,
 	}
 
-	AssertHeadersExist(parser, input.RequiredHeaders)
+	err = AssertHeadersExist(parser, input.RequiredHeaders)
 
-	return parser
+	return parser, err
 }
 
 // Next returns the next Row from the sheet

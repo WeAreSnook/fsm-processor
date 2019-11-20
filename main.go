@@ -60,10 +60,18 @@ func main() {
 		},
 	}
 
-	AddPeopleWithConsent(inputData, &store)
+	err := AddPeopleWithConsent(inputData, &store)
+	if err != nil {
+		RespondWith(&store, err)
+		return
+	}
 	fmt.Printf("%d people with consent\n", len(store.People))
 
-	store.People = PeopleInHouseholdsWithChildren(inputData, store)
+	store.People, err = PeopleInHouseholdsWithChildren(inputData, store)
+	if err != nil {
+		RespondWith(&store, err)
+		return
+	}
 	fmt.Printf("%d people after household check\n", len(store.People))
 
 	RespondWith(&store, nil)

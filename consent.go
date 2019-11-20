@@ -11,11 +11,15 @@ import (
 // AddPeopleWithConsent parses which people have given consent to check entitlement data
 // and adds them directly to the PeopleStore
 // Data sources: Consent 360 & Benefit Extract
-func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
-	consentByClaimNumber := extractConsentData(inputData)
+func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
+	consentByClaimNumber, err := extractConsentData(inputData)
+
+	if err != nil {
+		return err
+	}
 
 	// Parse benefits extract
-	spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
+	err = spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
 		claimNumber, err := strconv.Atoi(row.Col(0))
 
 		if err != nil {
@@ -37,12 +41,14 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 			)
 		}
 	})
+
+	return err
 }
 
-func extractConsentData(inputData InputData) map[int]bool {
+func extractConsentData(inputData InputData) (map[int]bool, error) {
 	consentData := make(map[int]bool)
 
-	spreadsheet.EachRow(inputData.consent360, func(row spreadsheet.Row) {
+	err := spreadsheet.EachRow(inputData.consent360, func(row spreadsheet.Row) {
 		claimNumStr := strings.Replace(row.Col(2), "TEMP", "", 1)
 		claimNum, err := strconv.Atoi(claimNumStr)
 
@@ -58,5 +64,5 @@ func extractConsentData(inputData InputData) map[int]bool {
 		consentData[claimNum] = hasPermission
 	})
 
-	return consentData
+	return consentData, err
 }
