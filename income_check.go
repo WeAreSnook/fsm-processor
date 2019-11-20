@@ -24,6 +24,7 @@ type incomeData struct {
 	taxCreditIncomeStepOne float32
 	taxCreditIncomeStepTwo float32
 	taxCreditFigure        float32
+	combinedQualifier      bool
 }
 
 // PeopleWithQualifyingIncomes returns just the people in the provided store that qualify
@@ -64,6 +65,8 @@ func qualifyPerson(p Person, ch chan Person, w *sync.WaitGroup) {
 	} else {
 		incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
 	}
+
+	incomeData.combinedQualifier = determineCombinedQualifier(p, incomeData)
 
 	// TODO
 	if incomeData.taxCreditFigure > 0 {
@@ -125,6 +128,27 @@ func calculateStepTwo(person Person) float32 {
 		"Ptnr Widows Benefit",
 	}
 	return sumFloatColumns(person.BenefitExtractRow, colNames)
+}
+
+func determineCombinedQualifier(p Person, incomeData incomeData) bool {
+	row := p.BenefitExtractRow
+
+	wtc := row.FloatColByName("Clmt Working Tax Credits") + row.FloatColByName("Ptnr Working Tax Credits")
+	ctc := row.FloatColByName("Child tax credit - Claimant") + row.FloatColByName("Child tax credit - Partner")
+	belowThreshold := incomeData.taxCreditFigure <= ctcWtcAnnualIncomeFigure
+
+	qualifierA := wtc == 0 && ctc > 0 && belowThreshold
+
+	qualifierB := wtc > 0 && ctc > 0 && belowThreshold
+
+	passportedStdClaimIndicator := row.ColByName("Passported / Standard claim indicator")
+	passportQualifier := passportedStdClaimIndicator == "ESA(IR)" ||
+		passportedStdClaimIndicator == "Income Support" ||
+		passportedStdClaimIndicator == "JSA(IB)"
+
+	ucQualifier := false
+
+	return qualifierA || qualifierB || passportQualifier || ucQualifier
 }
 
 func sumFloatColumns(row spreadsheet.Row, colNames []string) float32 {
