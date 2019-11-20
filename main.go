@@ -32,6 +32,11 @@ func main() {
 			Path:       "./private-data/Benefit Extract_06-09-19.txt",
 			HasHeaders: true,
 			RequiredHeaders: []string{
+				// Extracted in consent check
+				"Claim Number",
+				"Clmt First Forename",
+				"Clmt Surname",
+
 				// Tax credit step one
 				"Clmt Personal Pension",
 				"Clmt State Retirement Pension (incl SERP's graduated pension etc)",
