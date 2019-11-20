@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/addjam/fsm-processor/people"
 	"log"
 	"strconv"
 
@@ -11,8 +10,8 @@ import (
 // PeopleInHouseholdsWithChildren returns only the people in the store that belong to households
 // which have children, with those children added as dependants.
 // Data Source: SHBE
-func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []people.Person {
-	householdPeopleStore := people.Store{}
+func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) []Person {
+	householdPeopleStore := PeopleStore{}
 
 	spreadsheet.EachRow(inputData.dependentsSHBE, func(row spreadsheet.Row) {
 		claimNumStr := row.Col(0)
@@ -29,10 +28,10 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []p
 		// Check our local store, fall back to the overall store
 		person, err := householdPeopleStore.FindByClaimNumber(claimNumber)
 		alreadyAdded := err == nil
-		if err == people.ErrPersonNotFound {
+		if err == ErrPersonNotFound {
 			person, err = store.FindByClaimNumber(claimNumber)
 
-			if err == people.ErrPersonNotFound {
+			if err == ErrPersonNotFound {
 				return
 			}
 		}
@@ -42,7 +41,7 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []p
 			log.Fatalf("Unable to parse age %d\n", age)
 		}
 
-		dependent := people.Dependent{
+		dependent := Dependent{
 			Forename: row.Col(3),
 			Surname:  row.Col(2),
 			AgeYears: age,

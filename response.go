@@ -1,4 +1,4 @@
-package people
+package main
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 )
 
 // RespondWith stops execution and outputs some json
-func RespondWith(store Store, err error) {
+func RespondWith(store *PeopleStore, err error) {
 	// TODO update output data when we have some output to return
 	output := Output{
 		Success:        err == nil,

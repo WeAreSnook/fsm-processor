@@ -3,31 +3,30 @@ package main
 import (
 	"fmt"
 
-	"github.com/addjam/fsm-processor/people"
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
 // InputData represents all options and files received
 type InputData struct {
 	// Options
-	rolloverMode       bool // when NLC wipes out the data for the previous year and prepares the award for the next school year.
-	benefitAmountPence int
+	rolloverMode  bool // when NLC wipes out the data for the previous year and prepares the award for the next school year.
+	benefitAmount float32
 
 	// File paths
-	benefitExtract spreadsheet.ParserInput
-	dependentsSHBE spreadsheet.ParserInput
-	hbucd          spreadsheet.ParserInput
-	fsmCgAwards    spreadsheet.ParserInput
-	schoolRoll     spreadsheet.ParserInput
-	consent360     spreadsheet.ParserInput
+	benefitExtract  spreadsheet.ParserInput
+	dependentsSHBE  spreadsheet.ParserInput
+	universalCredit spreadsheet.ParserInput
+	fsmCgAwards     spreadsheet.ParserInput
+	schoolRoll      spreadsheet.ParserInput
+	consent360      spreadsheet.ParserInput
 }
 
 func main() {
-	store := people.Store{}
+	store := PeopleStore{}
 
 	inputData := InputData{
-		rolloverMode:       false,
-		benefitAmountPence: 61000, // £610
+		rolloverMode:  false,
+		benefitAmount: 610.0, // £610
 
 		benefitExtract: spreadsheet.ParserInput{
 			Path:       "./private-data/Benefit Extract_06-09-19.txt",
@@ -37,7 +36,7 @@ func main() {
 			Path:       "./private-data/dependants SHBE_06-09-19-2.xlsx",
 			HasHeaders: true,
 		},
-		hbucd: spreadsheet.ParserInput{
+		universalCredit: spreadsheet.ParserInput{
 			Path:       "./private-data/hb-uc.d-06-09-19.txt",
 			HasHeaders: false,
 			Format:     spreadsheet.Ssv,
@@ -63,8 +62,9 @@ func main() {
 
 	AddPeopleWithConsent(inputData, &store)
 	fmt.Printf("%d people with consent\n", len(store.People))
+
 	store.People = PeopleInHouseholdsWithChildren(inputData, store)
 	fmt.Printf("%d people after household check\n", len(store.People))
 
-	people.RespondWith(store, nil)
+	RespondWith(&store, nil)
 }

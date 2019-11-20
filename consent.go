@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/addjam/fsm-processor/people"
 	"log"
 	"strconv"
 	"strings"
@@ -12,7 +11,7 @@ import (
 // AddPeopleWithConsent parses which people have given consent to check entitlement data
 // and adds them directly to the PeopleStore
 // Data sources: Consent 360 & Benefit Extract
-func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
+func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) {
 	consentByClaimNumber := extractConsentData(inputData)
 
 	// Parse benefits extract
@@ -28,11 +27,12 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
 
 		if hasPermission {
 			peopleStore.Add(
-				people.Person{
-					Forename:    row.Col(4),
-					Surname:     row.Col(3),
-					ClaimNumber: claimNumber,
-					AgeYears:    0,
+				Person{
+					Forename:          row.Col(4),
+					Surname:           row.Col(3),
+					ClaimNumber:       claimNumber,
+					AgeYears:          0,
+					BenefitExtractRow: row,
 				},
 			)
 		}

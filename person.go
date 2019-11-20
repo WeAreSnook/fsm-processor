@@ -1,4 +1,6 @@
-package people
+package main
+
+import "github.com/addjam/fsm-processor/spreadsheet"
 
 // Person represents all the details associated with someone
 type Person struct {
@@ -7,6 +9,8 @@ type Person struct {
 	AgeYears    int
 	ClaimNumber int
 	Dependents  []Dependent
+
+	BenefitExtractRow spreadsheet.Row
 }
 
 // Dependent represents someone who depends on a Person

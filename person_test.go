@@ -1,4 +1,4 @@
-package people
+package main
 
 import "testing"
 

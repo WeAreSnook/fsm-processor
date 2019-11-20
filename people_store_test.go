@@ -1,4 +1,4 @@
-package people
+package main
 
 import "testing"
 
@@ -6,7 +6,7 @@ func TestFindExisting(t *testing.T) {
 	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
 	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
 
-	store := Store{
+	store := PeopleStore{
 		People: []Person{
 			chris,
 			michael,
@@ -41,7 +41,7 @@ func TestAdd(t *testing.T) {
 	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
 	newPerson := Person{Forename: "Bob", Surname: "WOW", AgeYears: 92}
 
-	store := Store{
+	store := PeopleStore{
 		People: []Person{
 			chris,
 			michael,
@@ -66,7 +66,7 @@ func TestUpdate(t *testing.T) {
 	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
 	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
 
-	store := Store{
+	store := PeopleStore{
 		People: []Person{
 			chris,
 			michael,

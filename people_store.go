@@ -1,4 +1,4 @@
-package people
+package main
 
 import (
 	"errors"
@@ -7,27 +7,27 @@ import (
 // ErrPersonNotFound is returned when a person isn't stored
 var ErrPersonNotFound = errors.New("person not found")
 
-// Storer can store people and perform CRUD operations
-type Storer interface {
+// PersonStorer can store people and perform CRUD operations
+type PersonStorer interface {
 	FindExisting(Person) (Person, error)
 	Add(Person)
 	Update(Person)
 	FindByClaimNumber(int) (Person, error)
 }
 
-// Store is an in-memory PersonStorer
-type Store struct {
+// PeopleStore is an in-memory PersonStorer
+type PeopleStore struct {
 	People []Person
 }
 
 // Add a Person to the PersonStore
-func (p *Store) Add(person Person) {
+func (p *PeopleStore) Add(person Person) {
 	p.People = append(p.People, person)
 }
 
 // FindExisting returns a person already in the store with matching details
 // This can be useful for finding by name
-func (p *Store) FindExisting(person Person) (Person, error) {
+func (p *PeopleStore) FindExisting(person Person) (Person, error) {
 	for _, existingPerson := range p.People {
 		if existingPerson.IsSameAs(person) {
 			return existingPerson, nil
@@ -39,7 +39,7 @@ func (p *Store) FindExisting(person Person) (Person, error) {
 
 // FindByClaimNumber finds an existing person by the provided claim number
 // Returns ErrPersonNotFound if there are no matches
-func (p *Store) FindByClaimNumber(claimNumber int) (Person, error) {
+func (p *PeopleStore) FindByClaimNumber(claimNumber int) (Person, error) {
 	for _, existingPerson := range p.People {
 		if existingPerson.ClaimNumber == claimNumber {
 			return existingPerson, nil
@@ -50,7 +50,7 @@ func (p *Store) FindByClaimNumber(claimNumber int) (Person, error) {
 }
 
 // Update finds an existing Person by claim number and replaces the entire struct
-func (p *Store) Update(newDetails Person) error {
+func (p *PeopleStore) Update(newDetails Person) error {
 	for i, existingPerson := range p.People {
 		if existingPerson.ClaimNumber == newDetails.ClaimNumber {
 			p.People[i] = newDetails
@@ -62,7 +62,7 @@ func (p *Store) Update(newDetails Person) error {
 }
 
 // Delete removes the person from the store. Doesn't preserve order.
-func (p *Store) Delete(person Person) error {
+func (p *PeopleStore) Delete(person Person) error {
 	for i, existingPerson := range p.People {
 		if existingPerson.ClaimNumber == person.ClaimNumber {
 			// Move element to end and truncate
