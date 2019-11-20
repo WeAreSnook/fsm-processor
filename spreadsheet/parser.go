@@ -18,6 +18,7 @@ type Parser interface {
 type Row interface {
 	Col(int) string
 	ColByName(string) string
+	FloatColByName(string) float32
 }
 
 // Format represents the format of the spreadsheete, e.g. xls, csv, etc

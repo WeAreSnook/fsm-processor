@@ -1,7 +1,9 @@
 package spreadsheet
 
 import (
+	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/extrame/xls"
 )
@@ -112,4 +114,22 @@ func (r XlsRow) ColByName(name string) string {
 	}
 
 	return r.Col(index)
+}
+
+// FloatColByName returns the float32 in the cell at the specified column
+func (r XlsRow) FloatColByName(name string) float32 {
+	str := r.ColByName(name)
+
+	if str == "" {
+		return 0
+	}
+
+	value, err := strconv.ParseFloat(str, 32)
+	if err != nil {
+		fmt.Printf(`Error parsing float for column "%s", falling back to 0`, name)
+		fmt.Println("")
+		return 0
+	}
+
+	return float32(value)
 }
