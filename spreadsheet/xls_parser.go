@@ -1,7 +1,6 @@
 package spreadsheet
 
 import (
-	"fmt"
 	"io"
 	"log"
 
@@ -111,7 +110,6 @@ func (r XlsRow) ColByName(name string) string {
 	}
 
 	index := indexOf(r.p.headers, name)
-	fmt.Printf("Index is %d\n", index)
 	if index < 0 {
 		return ""
 	}
