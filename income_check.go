@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -28,19 +29,46 @@ type incomeData struct {
 // PeopleWithQualifyingIncomes returns just the people in the provided store that qualify
 // for FSM or CG. Updates the people to show this.
 func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) []Person {
-	for _, person := range store.People {
-		// Calculate step one/two data
-		incomeData := calculateIncomeSteps(person)
+	var people []Person
 
-		// Calculate tax credit figure
-		if incomeData.taxCreditIncomeStepOne <= 300 {
-			incomeData.taxCreditFigure = incomeData.taxCreditIncomeStepTwo * 52
-		} else {
-			incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
-		}
+	var wg sync.WaitGroup
+	peopleChannel := make(chan Person)
+
+	for _, person := range store.People {
+		wg.Add(1)
+		go qualifyPerson(person, peopleChannel, &wg)
+	}
+
+	go func() {
+		wg.Wait()
+		close(peopleChannel)
+	}()
+
+	for person := range peopleChannel {
+		people = append(people, person)
 	}
 
 	return []Person{}
+}
+
+// Concurrently qualifies person based on icnome data
+func qualifyPerson(p Person, ch chan Person, w *sync.WaitGroup) {
+	defer w.Done()
+
+	// Calculate step one/two data
+	incomeData := calculateIncomeSteps(p)
+
+	// Calculate tax credit figure
+	if incomeData.taxCreditIncomeStepOne <= 300 {
+		incomeData.taxCreditFigure = incomeData.taxCreditIncomeStepTwo * 52
+	} else {
+		incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
+	}
+
+	// TODO
+	if incomeData.taxCreditFigure > 0 {
+		ch <- p
+	}
 }
 
 func calculateIncomeSteps(person Person) incomeData {
