@@ -1,6 +1,8 @@
 package spreadsheet
 
-import "testing"
+import (
+	"testing"
+)
 
 // AssertColumnNamed assets the column with the given name matches the expected output
 func AssertColumnNamed(t *testing.T, row Row, name, want string) {
