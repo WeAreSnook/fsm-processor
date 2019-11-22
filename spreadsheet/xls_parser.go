@@ -100,9 +100,6 @@ func (r XlsRow) Col(index int) string {
 }
 
 // ColByName returns the string in the cell at the specified column
-//
-// NOTE: SetHeaderNames should be called to enable this, as Xls headers aren't
-// automatically parsed
 func (r XlsRow) ColByName(name string) string {
 	if !r.p.hasHeaders {
 		return ""
