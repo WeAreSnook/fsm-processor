@@ -29,15 +29,35 @@ type incomeData struct {
 
 // PeopleWithQualifyingIncomes returns just the people in the provided store that qualify
 // for FSM or CG. Updates the people to show this.
-func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) []Person {
+func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Person, error) {
 	var people []Person
+
+	universalCreditParser, err := spreadsheet.NewParser(inputData.universalCredit)
+	if err != nil {
+		return people, err
+	}
+	universalCreditParser.SetHeaderNames([]string{
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "aa", "ab", "ac", "ad", "ae",
+	})
+
+	// TODO swap this to generic index based approach
+	var rowsByClaimNum map[int]spreadsheet.Row = make(map[int]spreadsheet.Row)
+	spreadsheet.EachParserRow(universalCreditParser, func(r spreadsheet.Row) {
+		claimNumStr := r.ColByName("b")
+		claimNum, err := strconv.Atoi(claimNumStr)
+
+		if err == nil {
+			rowsByClaimNum[claimNum] = r
+		}
+	})
 
 	var wg sync.WaitGroup
 	peopleChannel := make(chan Person)
 
 	for _, person := range store.People {
 		wg.Add(1)
-		go qualifyPerson(person, peopleChannel, &wg)
+		ucRow := rowsByClaimNum[person.ClaimNumber]
+		go qualifyPerson(person, ucRow, peopleChannel, &wg)
 	}
 
 	go func() {
@@ -49,11 +69,11 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) []Perso
 		people = append(people, person)
 	}
 
-	return []Person{}
+	return people, nil
 }
 
 // Concurrently qualifies person based on icnome data
-func qualifyPerson(p Person, ch chan Person, w *sync.WaitGroup) {
+func qualifyPerson(p Person, universalCreditRow spreadsheet.Row, ch chan Person, w *sync.WaitGroup) {
 	defer w.Done()
 
 	// Calculate step one/two data
@@ -66,10 +86,9 @@ func qualifyPerson(p Person, ch chan Person, w *sync.WaitGroup) {
 		incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
 	}
 
-	incomeData.combinedQualifier = determineCombinedQualifier(p, incomeData)
+	incomeData.combinedQualifier = determineCombinedQualifier(p, incomeData, universalCreditRow)
 
-	// TODO
-	if incomeData.taxCreditFigure > 0 {
+	if incomeData.combinedQualifier {
 		ch <- p
 	}
 }
@@ -130,7 +149,7 @@ func calculateStepTwo(person Person) float32 {
 	return sumFloatColumns(person.BenefitExtractRow, colNames)
 }
 
-func determineCombinedQualifier(p Person, incomeData incomeData) bool {
+func determineCombinedQualifier(p Person, incomeData incomeData, universalCreditRow spreadsheet.Row) bool {
 	row := p.BenefitExtractRow
 
 	wtc := row.FloatColByName("Clmt Working Tax Credits") + row.FloatColByName("Ptnr Working Tax Credits")
@@ -146,7 +165,18 @@ func determineCombinedQualifier(p Person, incomeData incomeData) bool {
 		passportedStdClaimIndicator == "Income Support" ||
 		passportedStdClaimIndicator == "JSA(IB)"
 
+	// TODO determine this
+	// - Add FetchRowByColValue(colName string, value string) Row to parsers?
+	// - Add AddIndex(colName string) to parsers that can speed up the above? by generating an internal map[string] spreadsheet.Row
+	//			This would have the downside of having to parse the entire file once. Maybe by using another internal parser so that it doesnt mess with .Next(). Could maybe be done concurrently?
 	ucQualifier := false
+	if universalCreditRow != nil {
+		benefitAmountStr := universalCreditRow.ColByName("aa")
+		benefitAmount, err := strconv.Atoi(benefitAmountStr)
+		if err == nil {
+			ucQualifier = benefitAmount < 610 // TODO from input data
+		}
+	}
 
 	return qualifierA || qualifierB || passportQualifier || ucQualifier
 }
