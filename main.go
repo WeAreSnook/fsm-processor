@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -83,7 +85,7 @@ func main() {
 			HasHeaders: true,
 		},
 		universalCredit: spreadsheet.ParserInput{
-			Path:       "./private-data/hb-uc.d-06-09-19.txt",
+			Path:       "./private-data/hb-uc.d_06-09-19.txt",
 			HasHeaders: false,
 			Format:     spreadsheet.Ssv,
 		},
@@ -120,7 +122,35 @@ func main() {
 	}
 	fmt.Printf("%d people after household check\n", len(store.People))
 
-	PeopleWithQualifyingIncomes(inputData, store)
+	store.People, err = PeopleWithQualifyingIncomes(inputData, store)
+	if err != nil {
+		RespondWith(&store, err)
+		return
+	}
+	fmt.Printf("%d people after income qualifying\n", len(store.People))
+
+	writeOutput(store)
 
 	RespondWith(&store, nil)
+}
+
+// TODO update this to the expected format
+func writeOutput(store PeopleStore) {
+	file, err := os.Create("result.csv")
+	if err != nil {
+		fmt.Println("Error creating output")
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	writer.Write([]string{"claim number"})
+	for _, person := range store.People {
+		claimStr := fmt.Sprintf("%d", person.ClaimNumber)
+		err := writer.Write([]string{claimStr})
+		if err != nil {
+			fmt.Println("Error Writing line")
+		}
+	}
 }
