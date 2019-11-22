@@ -1,6 +1,7 @@
 package spreadsheet
 
 import (
+	"encoding/csv"
 	"log"
 	"path/filepath"
 )
@@ -55,7 +56,6 @@ type ParserInput struct {
 //   - xls
 //   - xlsx
 func NewParser(input ParserInput) (Parser, error) {
-
 	inputFormat := input.Format
 	if inputFormat == Auto {
 		extension := filepath.Ext(input.Path)
@@ -102,6 +102,11 @@ func EachParserRow(p Parser, f func(Row)) {
 		if err == ErrEOF {
 			break
 		} else if err != nil {
+			if err, ok := err.(*csv.ParseError); ok && err.Err == csv.ErrFieldCount {
+				// Some files have extra data which presents as a field count error, e.g. hb-uc.d has some trailing data.
+				break
+			}
+
 			log.Fatal(err)
 		}
 

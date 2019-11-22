@@ -53,6 +53,10 @@ func NewCsvParser(input ParserInput) (*CsvParser, error) {
 		hasHeaders: input.HasHeaders,
 	}
 
+	if input.Format == Ssv {
+		parser.SetSeparator(' ')
+	}
+
 	err = AssertHeadersExist(parser, input.RequiredHeaders)
 
 	return parser, err

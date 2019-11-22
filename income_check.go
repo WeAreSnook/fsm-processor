@@ -46,6 +46,11 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 		claimNumStr := r.ColByName("b")
 		claimNum, err := strconv.Atoi(claimNumStr)
 
+		if err != nil {
+			fmt.Printf("Error comverting %s\n", claimNumStr)
+			fmt.Printf("%#v\n", r)
+		}
+
 		if err == nil {
 			rowsByClaimNum[claimNum] = r
 		}
