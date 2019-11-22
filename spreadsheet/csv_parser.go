@@ -27,11 +27,12 @@ type CsvRow struct {
 func NewCsvParser(input ParserInput) (*CsvParser, error) {
 	file, err := os.Open(input.Path)
 	if err != nil {
-		return nil, ErrUnknownFormat{filePath: input.Path}
+		return nil, ErrUnableToParse{filePath: input.Path}
 	}
 
 	fileReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(fileReader)
+	csvReader.LazyQuotes = true
 
 	var headers []string
 	if input.HasHeaders {
