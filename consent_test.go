@@ -15,7 +15,7 @@ func TestExtractPeopleWithConsent(t *testing.T) {
 		rolloverMode:  false,
 		benefitAmount: 610, // £610
 
-		benefitExtract:  spreadsheet.ParserInput{Path: "./testdata/Benefit Extract_06_09_19.txt"},
+		benefitExtract:  spreadsheet.ParserInput{Path: "./testdata/Benefit Extract_06_09_19.txt", HasHeaders: true},
 		dependentsSHBE:  spreadsheet.ParserInput{Path: "./testdata/dependants SHBE_06-09-19-2.xlsx"},
 		universalCredit: spreadsheet.ParserInput{Path: "./testdata/hb-uc.d-06-09-19.txt"},
 		fsmCgAwards:     spreadsheet.ParserInput{Path: "./testdata/FSM&CGawards_06-09-19.xlsx"},
