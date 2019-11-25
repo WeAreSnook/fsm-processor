@@ -1,9 +1,7 @@
 package spreadsheet
 
 import (
-	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/extrame/xls"
 )
@@ -70,7 +68,7 @@ func (p *XlsParser) Next() (Row, error) {
 
 	p.currentRow = nextRow
 	row := p.sheet.Row(nextRow)
-	return XlsRow{p, row}, nil
+	return XlsRow{p: p, row: row}, nil
 }
 
 // Close closes the spreadsheet, making it unavailable for further operations
@@ -99,34 +97,7 @@ func (r XlsRow) Col(index int) string {
 	return r.row.Col(index)
 }
 
-// ColByName returns the string in the cell at the specified column
-func (r XlsRow) ColByName(name string) string {
-	if !r.p.hasHeaders {
-		return ""
-	}
-
-	index := indexOf(r.p.headers, name)
-	if index < 0 {
-		return ""
-	}
-
-	return r.Col(index)
-}
-
-// FloatColByName returns the float32 in the cell at the specified column
-func (r XlsRow) FloatColByName(name string) float32 {
-	str := r.ColByName(name)
-
-	if str == "" {
-		return 0
-	}
-
-	value, err := strconv.ParseFloat(str, 32)
-	if err != nil {
-		fmt.Printf(`Error parsing float for column "%s", falling back to 0`, name)
-		fmt.Println("")
-		return 0
-	}
-
-	return float32(value)
+// Headers returns the headers from the XLS
+func (r XlsRow) Headers() []string {
+	return r.p.headers
 }

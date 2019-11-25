@@ -8,7 +8,7 @@ import (
 func AssertColumnNamed(t *testing.T, row Row, name, want string) {
 	t.Helper()
 
-	got := row.ColByName(name)
+	got := ColByName(row, name)
 
 	if got != want {
 		t.Fatalf(`Expected "%s" but got "%s"`, want, got)

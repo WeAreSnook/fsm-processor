@@ -1,9 +1,6 @@
 package spreadsheet
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/tealeg/xlsx"
 )
 
@@ -70,7 +67,7 @@ func (p *XlsxParser) Next() (Row, error) {
 	p.currentRow = nextRow
 	row := p.sheet.Row(nextRow)
 
-	return XlsxRow{p, row}, nil
+	return XlsxRow{p: p, row: row}, nil
 }
 
 // Close is unimplemented and unnecessary for xlsx files
@@ -108,34 +105,7 @@ func (r XlsxRow) Col(index int) string {
 	return cell.String()
 }
 
-// ColByName returns the string in the cell at the specified column
-func (r XlsxRow) ColByName(name string) string {
-	if !r.p.hasHeaders {
-		return "noheaders"
-	}
-
-	index := indexOf(r.p.headers, name)
-	if index < 0 {
-		return ""
-	}
-
-	return r.Col(index)
-}
-
-// FloatColByName returns the float32 in the cell at the specified column
-func (r XlsxRow) FloatColByName(name string) float32 {
-	str := r.ColByName(name)
-
-	if str == "" {
-		return 0
-	}
-
-	value, err := strconv.ParseFloat(str, 32)
-	if err != nil {
-		fmt.Printf(`Error parsing float for column "%s", falling back to 0`, name)
-		fmt.Println("")
-		return 0
-	}
-
-	return float32(value)
+// Headers returns the headers from the XLSX
+func (r XlsxRow) Headers() []string {
+	return r.p.headers
 }

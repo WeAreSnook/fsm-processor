@@ -3,9 +3,7 @@ package spreadsheet
 import (
 	"bufio"
 	"encoding/csv"
-	"fmt"
 	"os"
-	"strconv"
 )
 
 // CsvParser is a Parser implementation that handles CSVs
@@ -70,7 +68,7 @@ func (p *CsvParser) Next() (Row, error) {
 		return CsvRow{}, err
 	}
 
-	row := CsvRow{p, line}
+	row := CsvRow{p: p, line: line}
 	return row, err
 }
 
@@ -109,30 +107,7 @@ func (r CsvRow) Col(index int) string {
 	return r.line[index]
 }
 
-// ColByName returns the string in the cell at the specified column
-func (r CsvRow) ColByName(name string) string {
-	index := indexOf(r.p.headers, name)
-	if index < 0 {
-		return ""
-	}
-
-	return r.Col(index)
-}
-
-// FloatColByName returns the float32 in the cell at the specified column
-func (r CsvRow) FloatColByName(name string) float32 {
-	str := r.ColByName(name)
-
-	if str == "" {
-		return 0
-	}
-
-	value, err := strconv.ParseFloat(str, 32)
-	if err != nil {
-		fmt.Printf(`Error parsing float for column "%s", falling back to 0`, name)
-		fmt.Println("")
-		return 0
-	}
-
-	return float32(value)
+// Headers returns the headers from the CSV
+func (r CsvRow) Headers() []string {
+	return r.p.headers
 }

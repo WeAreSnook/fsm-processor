@@ -17,9 +17,8 @@ type Parser interface {
 
 // Row refers to a row in a spreadsheet, which has many columns
 type Row interface {
+	Headers() []string
 	Col(int) string
-	ColByName(string) string
-	FloatColByName(string) float32
 }
 
 // Format represents the format of the spreadsheete, e.g. xls, csv, etc

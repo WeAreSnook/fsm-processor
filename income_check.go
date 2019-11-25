@@ -43,12 +43,12 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 	// TODO swap this to generic index based approach
 	var rowsByClaimNum map[int]spreadsheet.Row = make(map[int]spreadsheet.Row)
 	spreadsheet.EachParserRow(universalCreditParser, func(r spreadsheet.Row) {
-		claimNumStr := r.ColByName("b")
+		claimNumStr := spreadsheet.ColByName(r, "b")
 		claimNum, err := strconv.Atoi(claimNumStr)
 
 		if err != nil {
-			fmt.Printf("Error comverting %s\n", claimNumStr)
-			fmt.Printf("%#v\n", r)
+			fmt.Printf(`Error converting "%s"`, claimNumStr)
+			fmt.Printf("\n%#v\n", r)
 		}
 
 		if err == nil {
@@ -157,15 +157,15 @@ func calculateStepTwo(person Person) float32 {
 func determineCombinedQualifier(p Person, incomeData incomeData, universalCreditRow spreadsheet.Row) bool {
 	row := p.BenefitExtractRow
 
-	wtc := row.FloatColByName("Clmt Working Tax Credits") + row.FloatColByName("Ptnr Working Tax Credits")
-	ctc := row.FloatColByName("Child tax credit - Claimant") + row.FloatColByName("Child tax credit - Partner")
+	wtc := spreadsheet.FloatColByName(row, "Clmt Working Tax Credits") + spreadsheet.FloatColByName(row, "Ptnr Working Tax Credits")
+	ctc := spreadsheet.FloatColByName(row, "Child tax credit - Claimant") + spreadsheet.FloatColByName(row, "Child tax credit - Partner")
 	belowThreshold := incomeData.taxCreditFigure <= ctcWtcAnnualIncomeFigure
 
 	qualifierA := wtc == 0 && ctc > 0 && belowThreshold
 
 	qualifierB := wtc > 0 && ctc > 0 && belowThreshold
 
-	passportedStdClaimIndicator := row.ColByName("Passported / Standard claim indicator")
+	passportedStdClaimIndicator := spreadsheet.ColByName(row, "Passported / Standard claim indicator")
 	passportQualifier := passportedStdClaimIndicator == "ESA(IR)" ||
 		passportedStdClaimIndicator == "Income Support" ||
 		passportedStdClaimIndicator == "JSA(IB)"
@@ -176,7 +176,7 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 	//			This would have the downside of having to parse the entire file once. Maybe by using another internal parser so that it doesnt mess with .Next(). Could maybe be done concurrently?
 	ucQualifier := false
 	if universalCreditRow != nil {
-		benefitAmountStr := universalCreditRow.ColByName("aa")
+		benefitAmountStr := spreadsheet.ColByName(universalCreditRow, "aa")
 		benefitAmount, err := strconv.Atoi(benefitAmountStr)
 		if err == nil {
 			ucQualifier = benefitAmount < 610 // TODO from input data
@@ -189,7 +189,7 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 func sumFloatColumns(row spreadsheet.Row, colNames []string) float32 {
 	var result float32 = 0
 	for _, colName := range colNames {
-		cellStr := row.ColByName(colName)
+		cellStr := spreadsheet.ColByName(row, colName)
 
 		// Default to "0" for empty cells
 		if cellStr == "" {

@@ -20,7 +20,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 
 	// Parse benefits extract
 	err = spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
-		claimNumStr := row.ColByName("Claim Number")
+		claimNumStr := spreadsheet.ColByName(row, "Claim Number")
 		claimNumber, err := strconv.Atoi(claimNumStr)
 
 		if err != nil {
@@ -33,8 +33,8 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 		if hasPermission {
 			peopleStore.Add(
 				Person{
-					Forename:          row.ColByName("Clmt First Forename"),
-					Surname:           row.ColByName("Clmt Surname"),
+					Forename:          spreadsheet.ColByName(row, "Clmt First Forename"),
+					Surname:           spreadsheet.ColByName(row, "Clmt Surname"),
 					ClaimNumber:       claimNumber,
 					BenefitExtractRow: row,
 				},
