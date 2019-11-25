@@ -136,7 +136,7 @@ func main() {
 
 // TODO update this to the expected format
 func writeOutput(store PeopleStore) {
-	file, err := os.Create("result.csv")
+	file, err := os.Create("report_result.csv")
 	if err != nil {
 		fmt.Println("Error creating output")
 	}
