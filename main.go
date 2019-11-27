@@ -129,6 +129,8 @@ func main() {
 	}
 	fmt.Printf("%d people after income qualifying\n", len(store.People))
 
+	store.People, err = PeopleWithChildrenAtNlcSchool(privateInputData, store)
+
 	writeOutput(store)
 
 	RespondWith(&store, nil)
