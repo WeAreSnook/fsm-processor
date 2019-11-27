@@ -21,6 +21,7 @@ type Person struct {
 
 // Dependent represents someone who depends on a Person
 type Dependent struct {
+	Person   Person
 	Forename string
 	Surname  string
 	AgeYears int
@@ -38,5 +39,6 @@ func (p Person) IsSameAs(person Person) bool {
 
 // AddDependent adds the provided dependent to the Person
 func (p *Person) AddDependent(d Dependent) {
+	d.Person = *p
 	p.Dependents = append(p.Dependents, d)
 }
