@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -22,7 +23,7 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) ([]P
 		claimNumber, err := strconv.Atoi(claimNumStr)
 
 		if err != nil {
-			log.Fatalf(`Error parsing claim number "%s" in shbe`, row.Col(0))
+			log.Fatalf(`Error parsing claim number "%s" in shbe`, claimNumStr)
 		}
 
 		// Check our local store, fall back to the overall store
@@ -41,11 +42,17 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) ([]P
 			log.Fatalf("Unable to parse age %d\n", age)
 		}
 
+		dobStr := row.Col(4)
+		dob, err := time.Parse("01-02-06", dobStr)
+		if err != nil {
+			log.Fatalf("Unable to parse dob %s", dobStr)
+		}
+
 		dependent := Dependent{
 			Forename: row.Col(3),
 			Surname:  row.Col(2),
 			AgeYears: age,
-			Dob:      row.Col(4),
+			Dob:      dob,
 		}
 		person.AddDependent(dependent)
 
