@@ -1,14 +1,20 @@
 package main
 
-import "github.com/addjam/fsm-processor/spreadsheet"
+import (
+	"time"
+
+	"github.com/addjam/fsm-processor/spreadsheet"
+)
 
 // Person represents all the details associated with someone
 type Person struct {
-	Forename    string
-	Surname     string
-	AgeYears    int
-	ClaimNumber int
-	Dependents  []Dependent
+	Forename      string
+	Surname       string
+	AgeYears      int
+	ClaimNumber   int
+	AddressStreet string
+	Postcode      string
+	Dependents    []Dependent
 
 	BenefitExtractRow spreadsheet.Row
 }
@@ -18,7 +24,10 @@ type Dependent struct {
 	Forename string
 	Surname  string
 	AgeYears int
-	Dob      string
+	Dob      time.Time
+
+	// TODO:
+	InNlcSchool bool
 }
 
 // IsSameAs checks if two Person structs refer to the same person

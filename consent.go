@@ -36,6 +36,8 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 					Forename:          spreadsheet.ColByName(row, "Clmt First Forename"),
 					Surname:           spreadsheet.ColByName(row, "Clmt Surname"),
 					ClaimNumber:       claimNumber,
+					Postcode:          spreadsheet.ColByName(row, "PostCode"),
+					AddressStreet:     spreadsheet.ColByName(row, "Address1"),
 					BenefitExtractRow: row,
 				},
 			)
