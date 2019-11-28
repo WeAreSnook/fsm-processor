@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"math"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -17,6 +19,12 @@ const definiteMatchThreshold = 0.95
 
 var numComparisons = 0
 var totalDependents = 0
+
+type dependentMatch struct {
+	Dependent Dependent
+	Score     float64
+	Row       SchoolRollRow
+}
 
 type personBySurname []Person
 
@@ -69,21 +77,21 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
 
 	// clean and sort people
-	for i, person := range store.People {
-		person.Surname = cleanString(person.Surname)
-		person.Forename = cleanString(person.Forename)
-		person.Postcode = cleanString(person.Postcode)
-		person.AddressStreet = cleanString(person.AddressStreet)
+	// for i, person := range store.People {
+	// 	person.Surname = cleanString(person.Surname)
+	// 	person.Forename = cleanString(person.Forename)
+	// 	person.Postcode = cleanString(person.Postcode)
+	// 	person.AddressStreet = cleanString(person.AddressStreet)
 
-		for di, d := range person.Dependents {
-			d.Surname = cleanString(d.Surname)
-			d.Forename = cleanString(d.Forename)
-			d.Person = person
-			person.Dependents[di] = d
-		}
+	// 	for di, d := range person.Dependents {
+	// 		d.Surname = cleanString(d.Surname)
+	// 		d.Forename = cleanString(d.Forename)
+	// 		d.Person = person
+	// 		person.Dependents[di] = d
+	// 	}
 
-		store.People[i] = person
-	}
+	// 	store.People[i] = person
+	// }
 	sort.Sort(personBySurname(store.People))
 
 	// Sort the rows
@@ -98,14 +106,14 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 
 	// Find matches
 	var wg sync.WaitGroup
-	dependentChannel := make(chan Dependent)
+	dependentChannel := make(chan dependentMatch)
 
 	for _, person := range store.People {
-		rowsInPostcode := postcodeIndex[person.Postcode]
+		rowsInPostcode := postcodeIndex[cleanString(person.Postcode)]
 
 		for _, dependent := range person.Dependents {
 			wg.Add(1)
-			rowsWithSurname := surnameIndex[dependent.Surname]
+			rowsWithSurname := surnameIndex[cleanString(dependent.Surname)]
 			totalDependents++
 			go checkSchoolRoll(&wg, dependentChannel, dependent, [][]SchoolRollRow{rowsInPostcode, rowsWithSurname, schoolRollRows})
 		}
@@ -116,10 +124,37 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 		close(dependentChannel)
 	}()
 
+	file, err := os.Create("report_fuzzy_matches.csv")
+	if err != nil {
+		fmt.Println("Error creating output")
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	writer.Write([]string{"claim number", "seemis ref", "forename SHBE", "forename SEEMIS", "surname SHBE", "surname SEEMIS", "postcode SHBE", "postcode SEEMIS", "address SHBE", "address SEEMIS", "dob SHBE", "dob SEEMIS", "score"})
+
+	dobString := func(t time.Time) string {
+		return t.Format("02-01-06")
+	}
+
 	totalMatched := 0
-	for range dependentChannel {
+	for match := range dependentChannel {
 		// fmt.Printf("Match: %#v\n\n", d)
 		totalMatched++
+		err := writer.Write([]string{
+			fmt.Sprintf("%d", match.Dependent.Person.ClaimNumber),
+			match.Row.Seemis,
+			match.Dependent.Forename, match.Row.Forename,
+			match.Dependent.Surname, match.Row.Surname,
+			match.Dependent.Person.Postcode, match.Row.Postcode,
+			match.Dependent.Person.AddressStreet, match.Row.AddressStreet,
+			dobString(match.Dependent.Dob), dobString(match.Row.Dob),
+			fmt.Sprintf("%f", match.Score)})
+		if err != nil {
+			fmt.Println("Error Writing line")
+		}
 	}
 
 	fmt.Printf("%d dependents in NLC out of %d\n", totalMatched, totalDependents)
@@ -128,39 +163,27 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 	return people, nil
 }
 
-func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsToSearch [][]SchoolRollRow) {
+func checkSchoolRoll(wg *sync.WaitGroup, ch chan dependentMatch, d Dependent, rowsToSearch [][]SchoolRollRow) {
 	defer wg.Done()
 
 	for _, rows := range rowsToSearch {
-		matched := isInSchoolRollRows(d, rows)
+		matched, match := isInSchoolRollRows(d, rows)
 		if matched {
-			ch <- d
+			ch <- match
 			return
 		}
 	}
 }
 
-func isInSchoolRollRows(d Dependent, rows []SchoolRollRow) bool {
+func isInSchoolRollRows(d Dependent, rows []SchoolRollRow) (bool, dependentMatch) {
 	for _, row := range rows {
-		if row.isFuzzyMatch(d.Person, d) {
-			return true
+		matched, match := row.isFuzzyMatch(d.Person, d)
+		if matched {
+			return true, match
 		}
 	}
 
-	return false
-}
-
-func findMatchingPerson(wg *sync.WaitGroup, ch chan Dependent, r SchoolRollRow, store PeopleStore) {
-	defer wg.Done()
-
-	for _, person := range store.People[0:100] {
-		for _, dependent := range person.Dependents {
-			if r.isFuzzyMatch(person, dependent) {
-				ch <- dependent
-				return
-			}
-		}
-	}
+	return false, dependentMatch{}
 }
 
 // SchoolRollRow represents the columns we care about from the school roll
@@ -170,6 +193,7 @@ type SchoolRollRow struct {
 	Surname       string
 	Postcode      string
 	AddressStreet string
+	Seemis        string
 
 	// Split DOB into parts on create for quicker comparisons
 	Dob      time.Time
@@ -180,7 +204,7 @@ type SchoolRollRow struct {
 
 func cleanedColByName(r spreadsheet.Row, colName string) string {
 	rowValue := spreadsheet.ColByName(r, colName)
-	return cleanString(rowValue)
+	return rowValue
 }
 
 // NewSchoolRollRow creates a SchoolRollRow struct from a row in the school roll spreadsheet
@@ -200,24 +224,25 @@ func NewSchoolRollRow(r spreadsheet.Row) (SchoolRollRow, error) {
 		DobYear:       dob.Year(),
 		DobMonth:      int(dob.Month()),
 		DobDay:        dob.Day(),
+		Seemis:        spreadsheet.ColByName(r, "SEEMIS reference"),
 	}, nil
 }
 
 // isFuzzyMatch determins if the dependent/person pair are a match for
 // a school roll row
-func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) bool {
+func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) (bool, dependentMatch) {
 	numComparisons++
 	forenameScore := compareStrings(dependent.Forename, r.Forename)
 	surnameScore := compareStrings(dependent.Surname, r.Surname)
 
 	combinedNameScore := (forenameScore + surnameScore) / 2
 	if combinedNameScore < 0.7 {
-		return false
+		return false, dependentMatch{}
 	}
 
 	dobScore := compareDob(dependent, r)
 	if dobScore == 0 {
-		return false
+		return false, dependentMatch{}
 	}
 
 	postcodeScore := compareStrings(person.Postcode, r.Postcode)
@@ -229,8 +254,12 @@ func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) bool {
 
 	// TODO when do we use street vs postcode
 	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore)
-
-	return aggregateScore >= definiteMatchThreshold
+	match := aggregateScore >= definiteMatchThreshold
+	return match, dependentMatch{
+		Dependent: dependent,
+		Score:     aggregateScore,
+		Row:       r,
+	}
 }
 
 // Score is weighted twice for dob and postcode
@@ -239,7 +268,7 @@ func calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore 
 }
 
 func compareStrings(nameA, nameB string) float64 {
-	return jellyfish.JaroWinkler(nameA, nameB)
+	return jellyfish.JaroWinkler(cleanString(nameA), cleanString(nameB))
 }
 
 // compareDob returns a score of how likely the dob are to be the same
