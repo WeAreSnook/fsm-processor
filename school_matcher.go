@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"sync"
 	"time"
@@ -18,29 +17,102 @@ const definiteMatchThreshold = 0.95
 func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Person, error) {
 	people := []Person{}
 
-	var wg sync.WaitGroup
-	dependentChannel := make(chan Dependent)
-
+	// Index of postcode to []Row
+	postcodeIndex := make(map[string][]spreadsheet.Row)
+	schoolRollRows := []spreadsheet.Row{}
 	err := spreadsheet.EachRow(inputData.schoolRoll, func(r spreadsheet.Row) {
-		wg.Add(1)
-		go findMatchingPerson(&wg, dependentChannel, r, store)
-	})
+		postcode := spreadsheet.ColByName(r, "Pupil's postcode")
+		postcode = cleanString(postcode)
+		if len(postcode) > 4 {
+			postcode = postcode[0:4]
+		}
+		if postcodeIndex[postcode] == nil {
+			postcodeIndex[postcode] = []spreadsheet.Row{}
+		}
 
+		postcodeIndex[postcode] = append(postcodeIndex[postcode], r)
+		schoolRollRows = append(schoolRollRows, r)
+	})
 	if err != nil {
 		return people, err
 	}
+	fmt.Printf("Generated index with %d items\n", len(postcodeIndex))
+	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
+
+	// Find matches
+	var wg sync.WaitGroup
+	dependentChannel := make(chan Dependent)
+
+	for _, person := range store.People[0:1000] {
+		personPostcode := cleanString(person.Postcode)
+		if len(personPostcode) > 4 {
+			personPostcode = personPostcode[0:4]
+		}
+		rowsInPostcode := postcodeIndex[personPostcode]
+
+		for _, dependent := range person.Dependents {
+			wg.Add(1)
+			go checkSchoolRoll(&wg, dependentChannel, dependent, rowsInPostcode, schoolRollRows)
+		}
+	}
+
+	// TODO with unmatched dependent -> loop over every row and do a check against them.
+	// Only useful if unmatched dependents is a small number
+
+	// err := spreadsheet.EachRow(inputData.schoolRoll, func(r spreadsheet.Row) {
+	// 	wg.Add(1)
+	// 	go findMatchingPerson(&wg, dependentChannel, r, store)
+	// })
+
+	// if err != nil {
+	// 	return people, err
+	// }
 
 	go func() {
 		wg.Wait()
 		close(dependentChannel)
 	}()
 
-	fmt.Printf("%d dependents in NLC", len(dependentChannel))
-	// for d := range dependentChannel {
-	// 	fmt.Printf("Match: %#v\n\n", d)
-	// }
+	total := 0
+	for range dependentChannel {
+		// fmt.Printf("Match: %#v\n\n", d)
+		total++
+	}
+
+	fmt.Printf("%d dependents in NLC", total)
 
 	return people, nil
+}
+
+func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsInPostcode []spreadsheet.Row, allRows []spreadsheet.Row) {
+	defer wg.Done()
+
+	matched := isInSchoolRollRows(d, rowsInPostcode)
+	if matched {
+		ch <- d
+		return
+	}
+
+	matched = isInSchoolRollRows(d, allRows)
+	if matched {
+		fmt.Println("From entire roll")
+		ch <- d
+		return
+	}
+
+	fmt.Println("No match")
+	fmt.Printf("%#v\n", d)
+	fmt.Println("")
+}
+
+func isInSchoolRollRows(d Dependent, rows []spreadsheet.Row) bool {
+	for _, row := range rows {
+		if isFuzzyMatch(d.Person, d, row) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func findMatchingPerson(wg *sync.WaitGroup, ch chan Dependent, r spreadsheet.Row, store PeopleStore) {
@@ -78,13 +150,13 @@ func isFuzzyMatch(person Person, dependent Dependent, schoolRollRow spreadsheet.
 	postcode := cleanedColByName("Pupil's postcode")
 	// street := cleanedColByName("Pupil's street")
 
-	dobStr := spreadsheet.ColByName(schoolRollRow, "Date of Birth")
-	dob, err := time.Parse("2-Jan-06", dobStr)
-	if err != nil {
-		log.Fatalf("Error parsing dob from %s", dobStr)
-	}
+	// dobStr := spreadsheet.ColByName(schoolRollRow, "Date of Birth")
+	// dob, err := time.Parse("2-Jan-06", dobStr)
+	// if err != nil {
+	// 	log.Fatalf("Error parsing dob from %s", dobStr)
+	// }
 
-	dobScore := compareDates(dependent.Dob, dob)
+	dobScore := 1.0 //compareDates(dependent.Dob, dob)
 	postcodeScore := compareStrings(person.Postcode, postcode)
 	// streetScore := compareStrings(person.AddressStreet, street)
 
