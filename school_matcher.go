@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +16,19 @@ import (
 const definiteMatchThreshold = 0.95
 
 var numComparisons = 0
+var totalDependents = 0
+
+type personBySurname []Person
+
+func (v personBySurname) Len() int           { return len(v) }
+func (v personBySurname) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v personBySurname) Less(i, j int) bool { return v[i].Surname < v[j].Surname }
+
+type schoolRowBySurname []SchoolRollRow
+
+func (v schoolRowBySurname) Len() int           { return len(v) }
+func (v schoolRowBySurname) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v schoolRowBySurname) Less(i, j int) bool { return v[i].Surname < v[j].Surname }
 
 // PeopleWithChildrenAtNlcSchool returns just the people from the store
 // that are likely matches for people in the school roll
@@ -53,78 +68,76 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 	fmt.Printf("Generated postcode index with %d items\n", len(postcodeIndex))
 	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
 
+	// clean and sort people
+	for i, person := range store.People {
+		person.Surname = cleanString(person.Surname)
+		person.Forename = cleanString(person.Forename)
+		person.Postcode = cleanString(person.Postcode)
+		person.AddressStreet = cleanString(person.AddressStreet)
+
+		for di, d := range person.Dependents {
+			d.Surname = cleanString(d.Surname)
+			d.Forename = cleanString(d.Forename)
+			d.Person = person
+			person.Dependents[di] = d
+		}
+
+		store.People[i] = person
+	}
+	sort.Sort(personBySurname(store.People))
+
+	// Sort the rows
+	sort.Sort(schoolRowBySurname(schoolRollRows))
+
+	fmt.Println("Sorted!")
+	fmt.Printf("First person %s, row %s\n", store.People[0].Surname, schoolRollRows[0].Surname)
+	fmt.Printf("Last person %s, row %s\n",
+		store.People[len(store.People)-1].Surname,
+		schoolRollRows[len(schoolRollRows)-1].Surname)
+	fmt.Printf("%d people\n", len(store.People))
+
 	// Find matches
 	var wg sync.WaitGroup
 	dependentChannel := make(chan Dependent)
 
-	for _, person := range store.People[0:1000] {
-		personPostcode := cleanString(person.Postcode)
-		rowsInPostcode := postcodeIndex[personPostcode]
-
-		personSurname := cleanString(person.Surname)
-		rowsWithSurname := surnameIndex[personSurname]
+	for _, person := range store.People {
+		rowsInPostcode := postcodeIndex[person.Postcode]
 
 		for _, dependent := range person.Dependents {
 			wg.Add(1)
-			go checkSchoolRoll(&wg, dependentChannel, dependent, rowsInPostcode, rowsWithSurname, schoolRollRows)
+			rowsWithSurname := surnameIndex[dependent.Surname]
+			totalDependents++
+			go checkSchoolRoll(&wg, dependentChannel, dependent, [][]SchoolRollRow{rowsInPostcode, rowsWithSurname, schoolRollRows})
 		}
 	}
-
-	// TODO with unmatched dependent -> loop over every row and do a check against them.
-	// Only useful if unmatched dependents is a small number
-
-	// err := spreadsheet.EachRow(inputData.schoolRoll, func(r spreadsheet.Row) {
-	// 	wg.Add(1)
-	// 	go findMatchingPerson(&wg, dependentChannel, r, store)
-	// })
-
-	// if err != nil {
-	// 	return people, err
-	// }
 
 	go func() {
 		wg.Wait()
 		close(dependentChannel)
 	}()
 
-	total := 0
+	totalMatched := 0
 	for range dependentChannel {
 		// fmt.Printf("Match: %#v\n\n", d)
-		total++
+		totalMatched++
 	}
 
-	fmt.Printf("%d dependents in NLC\n", total)
+	fmt.Printf("%d dependents in NLC out of %d\n", totalMatched, totalDependents)
 	fmt.Printf("%d comparisons\n", numComparisons)
 
 	return people, nil
 }
 
-func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsInPostcode []SchoolRollRow, rowsWithSurname []SchoolRollRow, allRows []SchoolRollRow) {
+func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsToSearch [][]SchoolRollRow) {
 	defer wg.Done()
 
-	matched := isInSchoolRollRows(d, rowsInPostcode)
-	if matched {
-		ch <- d
-		return
+	for _, rows := range rowsToSearch {
+		matched := isInSchoolRollRows(d, rows)
+		if matched {
+			ch <- d
+			return
+		}
 	}
-
-	matched = isInSchoolRollRows(d, rowsWithSurname)
-	if matched {
-		fmt.Println("Surname index")
-		ch <- d
-		return
-	}
-
-	matched = isInSchoolRollRows(d, allRows)
-	if matched {
-		fmt.Println("From entire roll")
-		ch <- d
-		return
-	}
-
-	fmt.Println("No match")
-	// fmt.Printf("%#v\n", d)
-	// fmt.Println("")
 }
 
 func isInSchoolRollRows(d Dependent, rows []SchoolRollRow) bool {
@@ -210,31 +223,23 @@ func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) bool {
 	postcodeScore := compareStrings(person.Postcode, r.Postcode)
 
 	// We compare only the first 30 characters, as limit in one sheet is 32 and the other is 30
-	// streetScore := compareStrings(takeString(person.AddressStreet, 30), takeString(r.AddressStreet, 30))
+	streetScore := compareStrings(takeString(person.AddressStreet, 30), takeString(r.AddressStreet, 30))
+
+	addressScore := math.Max(postcodeScore, streetScore)
 
 	// TODO when do we use street vs postcode
-	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, postcodeScore)
-
-	// if aggregateScore >= definiteMatchThreshold {
-	// 	fmt.Printf("Match of %f\n", aggregateScore)
-	// 	fmt.Printf("%s %s\n", dependent.Forename, forename)
-	// 	fmt.Printf("%s %s\n", dependent.Surname, surname)
-	// 	fmt.Printf("%s %s\n", person.Postcode, postcode)
-	// 	fmt.Println()
-	// }
+	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore)
 
 	return aggregateScore >= definiteMatchThreshold
 }
 
 // Score is weighted twice for dob and postcode
-func calculateWeightedScore(forenameScore, surnameScore, dobScore, postcodeScore float64) float64 {
-	return (forenameScore + surnameScore + (2 * dobScore) + (2 * postcodeScore)) / 6
+func calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore float64) float64 {
+	return (forenameScore + surnameScore + (2 * dobScore) + (2 * addressScore)) / 6
 }
 
 func compareStrings(nameA, nameB string) float64 {
-	cleanedA := cleanString(nameA)
-	cleanedB := cleanString(nameB)
-	return jellyfish.JaroWinkler(cleanedA, cleanedB)
+	return jellyfish.JaroWinkler(nameA, nameB)
 }
 
 // compareDob returns a score of how likely the dob are to be the same
