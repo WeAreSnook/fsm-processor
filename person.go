@@ -25,7 +25,12 @@ type Dependent struct {
 	Forename string
 	Surname  string
 	AgeYears int
+
+	// Split Dob into parts on create for quicker comparisons
 	Dob      time.Time
+	DobYear  int
+	DobMonth int
+	DobDay   int
 
 	// TODO:
 	InNlcSchool bool

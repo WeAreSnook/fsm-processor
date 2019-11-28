@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,31 +13,44 @@ import (
 
 const definiteMatchThreshold = 0.95
 
+var numComparisons = 0
+
 // PeopleWithChildrenAtNlcSchool returns just the people from the store
 // that are likely matches for people in the school roll
 func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Person, error) {
 	people := []Person{}
 
 	// Index of postcode to []Row
-	postcodeIndex := make(map[string][]spreadsheet.Row)
-	schoolRollRows := []spreadsheet.Row{}
+	postcodeIndex := make(map[string][]SchoolRollRow)
+	surnameIndex := make(map[string][]SchoolRollRow)
+	schoolRollRows := []SchoolRollRow{}
 	err := spreadsheet.EachRow(inputData.schoolRoll, func(r spreadsheet.Row) {
-		postcode := spreadsheet.ColByName(r, "Pupil's postcode")
-		postcode = cleanString(postcode)
-		if len(postcode) > 4 {
-			postcode = postcode[0:4]
-		}
-		if postcodeIndex[postcode] == nil {
-			postcodeIndex[postcode] = []spreadsheet.Row{}
+		row, err := NewSchoolRollRow(r)
+		if err != nil {
+			return
 		}
 
-		postcodeIndex[postcode] = append(postcodeIndex[postcode], r)
-		schoolRollRows = append(schoolRollRows, r)
+		// Full cache
+		schoolRollRows = append(schoolRollRows, row)
+
+		// By Postcode
+		if postcodeIndex[row.Postcode] == nil {
+			postcodeIndex[row.Postcode] = []SchoolRollRow{}
+		}
+
+		postcodeIndex[row.Postcode] = append(postcodeIndex[row.Postcode], row)
+
+		// By Surname
+		if surnameIndex[row.Surname] == nil {
+			surnameIndex[row.Surname] = []SchoolRollRow{}
+		}
+
+		surnameIndex[row.Surname] = append(surnameIndex[row.Surname], row)
 	})
 	if err != nil {
 		return people, err
 	}
-	fmt.Printf("Generated index with %d items\n", len(postcodeIndex))
+	fmt.Printf("Generated postcode index with %d items\n", len(postcodeIndex))
 	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
 
 	// Find matches
@@ -45,14 +59,14 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 
 	for _, person := range store.People[0:1000] {
 		personPostcode := cleanString(person.Postcode)
-		if len(personPostcode) > 4 {
-			personPostcode = personPostcode[0:4]
-		}
 		rowsInPostcode := postcodeIndex[personPostcode]
+
+		personSurname := cleanString(person.Surname)
+		rowsWithSurname := surnameIndex[personSurname]
 
 		for _, dependent := range person.Dependents {
 			wg.Add(1)
-			go checkSchoolRoll(&wg, dependentChannel, dependent, rowsInPostcode, schoolRollRows)
+			go checkSchoolRoll(&wg, dependentChannel, dependent, rowsInPostcode, rowsWithSurname, schoolRollRows)
 		}
 	}
 
@@ -79,16 +93,24 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 		total++
 	}
 
-	fmt.Printf("%d dependents in NLC", total)
+	fmt.Printf("%d dependents in NLC\n", total)
+	fmt.Printf("%d comparisons\n", numComparisons)
 
 	return people, nil
 }
 
-func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsInPostcode []spreadsheet.Row, allRows []spreadsheet.Row) {
+func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsInPostcode []SchoolRollRow, rowsWithSurname []SchoolRollRow, allRows []SchoolRollRow) {
 	defer wg.Done()
 
 	matched := isInSchoolRollRows(d, rowsInPostcode)
 	if matched {
+		ch <- d
+		return
+	}
+
+	matched = isInSchoolRollRows(d, rowsWithSurname)
+	if matched {
+		fmt.Println("Surname index")
 		ch <- d
 		return
 	}
@@ -101,13 +123,13 @@ func checkSchoolRoll(wg *sync.WaitGroup, ch chan Dependent, d Dependent, rowsInP
 	}
 
 	fmt.Println("No match")
-	fmt.Printf("%#v\n", d)
-	fmt.Println("")
+	// fmt.Printf("%#v\n", d)
+	// fmt.Println("")
 }
 
-func isInSchoolRollRows(d Dependent, rows []spreadsheet.Row) bool {
+func isInSchoolRollRows(d Dependent, rows []SchoolRollRow) bool {
 	for _, row := range rows {
-		if isFuzzyMatch(d.Person, d, row) {
+		if row.isFuzzyMatch(d.Person, d) {
 			return true
 		}
 	}
@@ -115,12 +137,12 @@ func isInSchoolRollRows(d Dependent, rows []spreadsheet.Row) bool {
 	return false
 }
 
-func findMatchingPerson(wg *sync.WaitGroup, ch chan Dependent, r spreadsheet.Row, store PeopleStore) {
+func findMatchingPerson(wg *sync.WaitGroup, ch chan Dependent, r SchoolRollRow, store PeopleStore) {
 	defer wg.Done()
 
 	for _, person := range store.People[0:100] {
 		for _, dependent := range person.Dependents {
-			if isFuzzyMatch(person, dependent, r) {
+			if r.isFuzzyMatch(person, dependent) {
 				ch <- dependent
 				return
 			}
@@ -128,39 +150,69 @@ func findMatchingPerson(wg *sync.WaitGroup, ch chan Dependent, r spreadsheet.Row
 	}
 }
 
-// isFuzzyMatch determins if the dependent/person pair are a match for
-// a school roll row
-func isFuzzyMatch(person Person, dependent Dependent, schoolRollRow spreadsheet.Row) bool {
-	cleanedColByName := func(colName string) string {
-		rowValue := spreadsheet.ColByName(schoolRollRow, colName)
-		return cleanString(rowValue)
+// SchoolRollRow represents the columns we care about from the school roll
+// it can be used for fuzzy matching
+type SchoolRollRow struct {
+	Forename      string
+	Surname       string
+	Postcode      string
+	AddressStreet string
+
+	// Split DOB into parts on create for quicker comparisons
+	Dob      time.Time
+	DobYear  int
+	DobMonth int
+	DobDay   int
+}
+
+func cleanedColByName(r spreadsheet.Row, colName string) string {
+	rowValue := spreadsheet.ColByName(r, colName)
+	return cleanString(rowValue)
+}
+
+// NewSchoolRollRow creates a SchoolRollRow struct from a row in the school roll spreadsheet
+func NewSchoolRollRow(r spreadsheet.Row) (SchoolRollRow, error) {
+	dobStr := spreadsheet.ColByName(r, "Date of Birth")
+	dob, err := time.Parse("2-Jan-06", dobStr)
+	if err != nil {
+		return SchoolRollRow{}, err
 	}
 
-	forename := cleanedColByName("Forename")
-	surname := cleanedColByName("Surname")
-	forenameScore := compareStrings(dependent.Forename, forename)
-	surnameScore := compareStrings(dependent.Surname, surname)
+	return SchoolRollRow{
+		Forename:      cleanedColByName(r, "Forename"),
+		Surname:       cleanedColByName(r, "Surname"),
+		Postcode:      cleanedColByName(r, "Pupil's postcode"),
+		AddressStreet: cleanedColByName(r, "Pupil's street"),
+		Dob:           dob,
+		DobYear:       dob.Year(),
+		DobMonth:      int(dob.Month()),
+		DobDay:        dob.Day(),
+	}, nil
+}
+
+// isFuzzyMatch determins if the dependent/person pair are a match for
+// a school roll row
+func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) bool {
+	numComparisons++
+	forenameScore := compareStrings(dependent.Forename, r.Forename)
+	surnameScore := compareStrings(dependent.Surname, r.Surname)
+
 	combinedNameScore := (forenameScore + surnameScore) / 2
 	if combinedNameScore < 0.7 {
-		// Can never be a definite match, even with full marks from
-		// the other scores
 		return false
 	}
 
-	postcode := cleanedColByName("Pupil's postcode")
-	// street := cleanedColByName("Pupil's street")
+	dobScore := compareDob(dependent, r)
+	if dobScore == 0 {
+		return false
+	}
 
-	// dobStr := spreadsheet.ColByName(schoolRollRow, "Date of Birth")
-	// dob, err := time.Parse("2-Jan-06", dobStr)
-	// if err != nil {
-	// 	log.Fatalf("Error parsing dob from %s", dobStr)
-	// }
+	postcodeScore := compareStrings(person.Postcode, r.Postcode)
 
-	dobScore := 1.0 //compareDates(dependent.Dob, dob)
-	postcodeScore := compareStrings(person.Postcode, postcode)
-	// streetScore := compareStrings(person.AddressStreet, street)
+	// We compare only the first 30 characters, as limit in one sheet is 32 and the other is 30
+	// streetScore := compareStrings(takeString(person.AddressStreet, 30), takeString(r.AddressStreet, 30))
 
-	// TODO use weighted score when we have them all
+	// TODO when do we use street vs postcode
 	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, postcodeScore)
 
 	// if aggregateScore >= definiteMatchThreshold {
@@ -185,11 +237,37 @@ func compareStrings(nameA, nameB string) float64 {
 	return jellyfish.JaroWinkler(cleanedA, cleanedB)
 }
 
-func compareDates(dateA, dateB time.Time) float64 {
-	return 1.0
+// compareDob returns a score of how likely the dob are to be the same
+// by allowing for the day/month columns to be switched
+func compareDob(d Dependent, r SchoolRollRow) float64 {
+	// Years must match
+	if d.DobYear != r.DobYear {
+		return 0
+	}
+
+	if d.Dob == r.Dob {
+		return 1
+	}
+
+	// Year is the same and the month/day is switched
+	if d.DobMonth == r.DobDay && d.DobDay == r.DobMonth {
+		// TODO should this be lower than 1? consult Anne
+		return 1
+	}
+
+	return 0
 }
 
+var re *regexp.Regexp = regexp.MustCompile(`[^a-zA-Z\d+]`)
+
 func cleanString(str string) string {
-	re := regexp.MustCompile(`[^a-zA-Z\d+]`)
-	return re.ReplaceAllString(str, "")
+	return strings.ToLower(re.ReplaceAllString(str, ""))
+}
+
+func takeString(str string, length int) string {
+	if len(str) < length {
+		return str
+	}
+
+	return str[0:length]
 }
