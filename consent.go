@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/addjam/fsm-processor/people"
 	"log"
 	"strconv"
 	"strings"
@@ -12,15 +11,20 @@ import (
 // AddPeopleWithConsent parses which people have given consent to check entitlement data
 // and adds them directly to the PeopleStore
 // Data sources: Consent 360 & Benefit Extract
-func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
-	consentByClaimNumber := extractConsentData(inputData)
+func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
+	consentByClaimNumber, err := extractConsentData(inputData)
+
+	if err != nil {
+		return err
+	}
 
 	// Parse benefits extract
-	spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
-		claimNumber, err := strconv.Atoi(row.Col(0))
+	err = spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
+		claimNumStr := spreadsheet.ColByName(row, "Claim Number")
+		claimNumber, err := strconv.Atoi(claimNumStr)
 
 		if err != nil {
-			log.Printf("Error parsing claim number from benefits extract %s", row.Col(0))
+			log.Printf("Error parsing claim number from benefits extract %s", claimNumStr)
 			return
 		}
 
@@ -28,21 +32,25 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *people.Store) {
 
 		if hasPermission {
 			peopleStore.Add(
-				people.Person{
-					Forename:    row.Col(4),
-					Surname:     row.Col(3),
-					ClaimNumber: claimNumber,
-					AgeYears:    0,
+				Person{
+					Forename:          spreadsheet.ColByName(row, "Clmt First Forename"),
+					Surname:           spreadsheet.ColByName(row, "Clmt Surname"),
+					ClaimNumber:       claimNumber,
+					Postcode:          spreadsheet.ColByName(row, "PostCode"),
+					AddressStreet:     spreadsheet.ColByName(row, "Address1"),
+					BenefitExtractRow: row,
 				},
 			)
 		}
 	})
+
+	return err
 }
 
-func extractConsentData(inputData InputData) map[int]bool {
+func extractConsentData(inputData InputData) (map[int]bool, error) {
 	consentData := make(map[int]bool)
 
-	spreadsheet.EachRow(inputData.consent360, func(row spreadsheet.Row) {
+	err := spreadsheet.EachRow(inputData.consent360, func(row spreadsheet.Row) {
 		claimNumStr := strings.Replace(row.Col(2), "TEMP", "", 1)
 		claimNum, err := strconv.Atoi(claimNumStr)
 
@@ -58,5 +66,5 @@ func extractConsentData(inputData InputData) map[int]bool {
 		consentData[claimNum] = hasPermission
 	})
 
-	return consentData
+	return consentData, err
 }

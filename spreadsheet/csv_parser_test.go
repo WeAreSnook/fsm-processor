@@ -7,7 +7,11 @@ func TestCsvNext(t *testing.T) {
 		input := ParserInput{
 			Path: "./testdata/space separated.txt",
 		}
-		parser := NewCsvParser(input)
+		parser, err := NewCsvParser(input)
+		if err != nil {
+			t.Fatalf("Error creating parser")
+		}
+
 		parser.SetSeparator(' ')
 
 		row, err := parser.Next()
@@ -33,7 +37,11 @@ func TestCsvNext(t *testing.T) {
 	})
 
 	t.Run("Allows retrieval of column data by name", func(t *testing.T) {
-		parser := NewCsvParser(ParserInput{Path: "./testdata/csv with headers.txt"})
+		parser, err := NewCsvParser(ParserInput{Path: "./testdata/csv with headers.txt", HasHeaders: true})
+
+		if err != nil {
+			t.Fatalf("Error creating parser")
+		}
 
 		row, err := parser.Next()
 		if err != nil {

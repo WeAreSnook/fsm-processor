@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/addjam/fsm-processor/people"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -11,10 +11,10 @@ import (
 // PeopleInHouseholdsWithChildren returns only the people in the store that belong to households
 // which have children, with those children added as dependants.
 // Data Source: SHBE
-func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []people.Person {
-	householdPeopleStore := people.Store{}
+func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) ([]Person, error) {
+	householdPeopleStore := PeopleStore{}
 
-	spreadsheet.EachRow(inputData.dependentsSHBE, func(row spreadsheet.Row) {
+	err := spreadsheet.EachRow(inputData.dependentsSHBE, func(row spreadsheet.Row) {
 		claimNumStr := row.Col(0)
 		if claimNumStr == "" {
 			return
@@ -23,16 +23,16 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []p
 		claimNumber, err := strconv.Atoi(claimNumStr)
 
 		if err != nil {
-			log.Fatalf(`Error parsing claim number "%s" in shbe`, row.Col(0))
+			log.Fatalf(`Error parsing claim number "%s" in shbe`, claimNumStr)
 		}
 
 		// Check our local store, fall back to the overall store
 		person, err := householdPeopleStore.FindByClaimNumber(claimNumber)
 		alreadyAdded := err == nil
-		if err == people.ErrPersonNotFound {
+		if err == ErrPersonNotFound {
 			person, err = store.FindByClaimNumber(claimNumber)
 
-			if err == people.ErrPersonNotFound {
+			if err == ErrPersonNotFound {
 				return
 			}
 		}
@@ -42,11 +42,17 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []p
 			log.Fatalf("Unable to parse age %d\n", age)
 		}
 
-		dependent := people.Dependent{
+		dobStr := row.Col(4)
+		dob, err := time.Parse("01-02-06", dobStr)
+		if err != nil {
+			log.Fatalf("Unable to parse dob %s", dobStr)
+		}
+
+		dependent := Dependent{
 			Forename: row.Col(3),
 			Surname:  row.Col(2),
 			AgeYears: age,
-			Dob:      row.Col(4),
+			Dob:      dob,
 		}
 		person.AddDependent(dependent)
 
@@ -57,5 +63,5 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store people.Store) []p
 		}
 	})
 
-	return householdPeopleStore.People
+	return householdPeopleStore.People, err
 }

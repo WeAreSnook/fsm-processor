@@ -1,9 +1,7 @@
 package spreadsheet
 
 import (
-	"fmt"
 	"io"
-	"log"
 
 	"github.com/extrame/xls"
 )
@@ -26,17 +24,15 @@ type XlsRow struct {
 }
 
 // NewXlsParser creates an XlsParser from a given file path
-func NewXlsParser(input ParserInput) *XlsParser {
+func NewXlsParser(input ParserInput) (*XlsParser, error) {
 	workbook, closer, err := xls.OpenWithCloser(input.Path, "utf-8")
-
 	if err != nil {
-		// TODO FailWithError() that prints json to stdout
-		log.Fatal(err)
+		return nil, err
 	}
 
 	sheet := workbook.GetSheet(0)
 	if sheet == nil {
-		log.Fatalf("Couldn't open sheet in xls: %s", input.Path)
+		return nil, ErrUnableToParse{input.Path}
 	}
 
 	var headers []string
@@ -58,9 +54,9 @@ func NewXlsParser(input ParserInput) *XlsParser {
 		headers:    headers,
 	}
 
-	AssertHeadersExist(parser, input.RequiredHeaders)
+	err = AssertHeadersExist(parser, input.RequiredHeaders)
 
-	return parser
+	return parser, err
 }
 
 // Next returns the next Row from the sheet
@@ -72,7 +68,7 @@ func (p *XlsParser) Next() (Row, error) {
 
 	p.currentRow = nextRow
 	row := p.sheet.Row(nextRow)
-	return XlsRow{p, row}, nil
+	return XlsRow{p: p, row: row}, nil
 }
 
 // Close closes the spreadsheet, making it unavailable for further operations
@@ -101,20 +97,7 @@ func (r XlsRow) Col(index int) string {
 	return r.row.Col(index)
 }
 
-// ColByName returns the string in the cell at the specified column
-//
-// NOTE: SetHeaderNames should be called to enable this, as Xls headers aren't
-// automatically parsed
-func (r XlsRow) ColByName(name string) string {
-	if !r.p.hasHeaders {
-		return ""
-	}
-
-	index := indexOf(r.p.headers, name)
-	fmt.Printf("Index is %d\n", index)
-	if index < 0 {
-		return ""
-	}
-
-	return r.Col(index)
+// Headers returns the headers from the XLS
+func (r XlsRow) Headers() []string {
+	return r.p.headers
 }

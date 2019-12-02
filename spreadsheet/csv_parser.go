@@ -3,7 +3,6 @@ package spreadsheet
 import (
 	"bufio"
 	"encoding/csv"
-	"log"
 	"os"
 )
 
@@ -23,20 +22,22 @@ type CsvRow struct {
 }
 
 // NewCsvParser creates a CsvParser with the given path, opening the file and preparing it for reading
-func NewCsvParser(input ParserInput) *CsvParser {
+func NewCsvParser(input ParserInput) (*CsvParser, error) {
 	file, err := os.Open(input.Path)
 	if err != nil {
-		log.Fatalf("Error opening file: %s", input.Path)
+		return nil, ErrUnableToParse{filePath: input.Path}
 	}
+
 	fileReader := bufio.NewReader(file)
 	csvReader := csv.NewReader(fileReader)
+	csvReader.LazyQuotes = true
 
 	var headers []string
 	if input.HasHeaders {
 		// Skip column header row
 		line, err := csvReader.Read()
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		headers = line
@@ -50,9 +51,13 @@ func NewCsvParser(input ParserInput) *CsvParser {
 		hasHeaders: input.HasHeaders,
 	}
 
-	AssertHeadersExist(parser, input.RequiredHeaders)
+	if input.Format == Ssv {
+		parser.SetSeparator(' ')
+	}
 
-	return parser
+	err = AssertHeadersExist(parser, input.RequiredHeaders)
+
+	return parser, err
 }
 
 // Next returns the next Row from the file, or errors if for example we reached the end
@@ -63,7 +68,7 @@ func (p *CsvParser) Next() (Row, error) {
 		return CsvRow{}, err
 	}
 
-	row := CsvRow{p, line}
+	row := CsvRow{p: p, line: line}
 	return row, err
 }
 
@@ -102,12 +107,7 @@ func (r CsvRow) Col(index int) string {
 	return r.line[index]
 }
 
-// ColByName returns the string in the cell at the specified column
-func (r CsvRow) ColByName(name string) string {
-	index := indexOf(r.p.headers, name)
-	if index < 0 {
-		return ""
-	}
-
-	return r.Col(index)
+// Headers returns the headers from the CSV
+func (r CsvRow) Headers() []string {
+	return r.p.headers
 }

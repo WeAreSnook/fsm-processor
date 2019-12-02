@@ -1,10 +1,7 @@
 package spreadsheet
 
 import (
-	"log"
 	"path/filepath"
-
-	"github.com/addjam/fsm-processor/people"
 )
 
 // Parser is an interface for types that can parse a spreadsheet by Row
@@ -18,8 +15,8 @@ type Parser interface {
 
 // Row refers to a row in a spreadsheet, which has many columns
 type Row interface {
+	Headers() []string
 	Col(int) string
-	ColByName(string) string
 }
 
 // Format represents the format of the spreadsheete, e.g. xls, csv, etc
@@ -55,8 +52,7 @@ type ParserInput struct {
 //   - CSV
 //   - xls
 //   - xlsx
-func NewParser(input ParserInput) Parser {
-
+func NewParser(input ParserInput) (Parser, error) {
 	inputFormat := input.Format
 	if inputFormat == Auto {
 		extension := filepath.Ext(input.Path)
@@ -74,9 +70,7 @@ func NewParser(input ParserInput) Parser {
 		return NewCsvParser(input)
 	}
 
-	log.Fatalf("No parser for file at path %s\n", input.Path)
-
-	return nil
+	return nil, nil
 }
 
 func formatFromExtension(ext string) Format {
@@ -92,38 +86,4 @@ func formatFromExtension(ext string) Format {
 	}
 
 	return Csv
-}
-
-// EachParserRow calls func for each of the rows provided by a Parser
-// Automatically closes the parser
-func EachParserRow(p Parser, f func(Row)) {
-	defer p.Close()
-
-	for {
-		row, err := p.Next()
-
-		if err == ErrEOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
-
-		f(row)
-	}
-}
-
-// EachRow takes the path of a spreadsheet and executes the func once for each row
-func EachRow(input ParserInput, f func(Row)) {
-	parser := NewParser(input)
-	EachParserRow(parser, f)
-}
-
-// AssertHeadersExist ensures the provided headers exist and exits if they don't
-func AssertHeadersExist(p Parser, expectedHeaders []string) {
-	for _, hdr := range expectedHeaders {
-		if indexOf(p.Headers(), hdr) < 0 {
-			people.RespondWith(people.Store{}, &ErrMissingHeader{filePath: p.Path(), header: hdr})
-			return
-		}
-	}
 }

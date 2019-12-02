@@ -23,3 +23,21 @@ type ErrMissingHeader struct {
 func (e ErrMissingHeader) Error() string {
 	return fmt.Sprintf(`Expected file "%s" to have header "%s" but it was missing`, e.filePath, e.header)
 }
+
+// ErrUnableToParse represents an error opening/parsing the given file
+type ErrUnableToParse struct {
+	filePath string
+}
+
+func (e ErrUnableToParse) Error() string {
+	return fmt.Sprintf(`Unable to open file "%s" for parsing`, e.filePath)
+}
+
+// ErrUnknownFormat represents an error detecting the format of a file
+type ErrUnknownFormat struct {
+	filePath string
+}
+
+func (e ErrUnknownFormat) Error() string {
+	return fmt.Sprintf(`Unable to determine format of file "%s" for parsing`, e.filePath)
+}
