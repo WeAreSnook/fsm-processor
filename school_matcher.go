@@ -59,7 +59,7 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	writer.Write([]string{"claim number", "seemis ref", "forename SHBE", "forename SEEMIS", "surname SHBE", "surname SEEMIS", "postcode SHBE", "postcode SEEMIS", "address SHBE", "address SEEMIS", "dob SHBE", "dob SEEMIS", "score"})
+	writer.Write([]string{"claim number", "seemis ref", "forename SHBE", "forename SEEMIS", "forename score", "surname SHBE", "surname SEEMIS", "surname score", "postcode SHBE", "postcode SEEMIS", "postcode score", "address SHBE", "address SEEMIS", "address score", "dob SHBE", "dob SEEMIS", "dob score", "weighted score"})
 
 	dobString := func(t time.Time) string {
 		return t.Format("02-01-06")
@@ -70,14 +70,15 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 		// fmt.Printf("Match: %#v\n\n", d)
 		totalMatched++
 		err := writer.Write([]string{
-			fmt.Sprintf("%d", match.Dependent.Dependent.Person.ClaimNumber),
+			fmt.Sprintf("%d", match.ComparableDependent.Dependent.Person.ClaimNumber),
 			match.Row.Seemis,
-			match.Dependent.Forename, match.Row.Forename,
-			match.Dependent.Surname, match.Row.Surname,
-			match.Dependent.Dependent.Person.Postcode, match.Row.Postcode,
-			match.Dependent.Dependent.Person.AddressStreet, match.Row.AddressStreet,
-			dobString(match.Dependent.Dob), dobString(match.Row.Dob),
-			fmt.Sprintf("%f", match.Score)})
+			match.ComparableDependent.Dependent.Forename, match.Row.Forename, fmt.Sprintf("%f", match.ForenameScore),
+			match.ComparableDependent.Dependent.Surname, match.Row.Surname, fmt.Sprintf("%f", match.SurnameScore),
+			match.ComparableDependent.Dependent.Person.Postcode, match.Row.Postcode, fmt.Sprintf("%f", match.PostcodeScore),
+			match.ComparableDependent.Dependent.Person.AddressStreet, match.Row.AddressStreet, fmt.Sprintf("%f", match.StreetScore),
+			dobString(match.ComparableDependent.Dob), dobString(match.Row.Dob), fmt.Sprintf("%f", match.DobScore),
+			fmt.Sprintf("%f", match.Score),
+		})
 		if err != nil {
 			fmt.Println("Error Writing line")
 		}
@@ -90,9 +91,14 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 }
 
 type dependentMatch struct {
-	Dependent comparableDependent
-	Score     float64
-	Row       SchoolRollRow
+	ComparableDependent comparableDependent
+	Score               float64
+	Row                 SchoolRollRow
+	ForenameScore       float64
+	SurnameScore        float64
+	PostcodeScore       float64
+	StreetScore         float64
+	DobScore            float64
 }
 
 // comparablePerson is a Person with cleaned/normalized fields
@@ -203,7 +209,7 @@ type SchoolRollRow struct {
 	AddressStreet string
 	Seemis        string
 
-	// Split DOB into parts on create for quicker comparisons
+	// Split DOB into parts on create for dd/mm swap comparisons
 	Dob      time.Time
 	DobYear  int
 	DobMonth int
@@ -265,9 +271,14 @@ func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, dependent comparabl
 	match := aggregateScore >= definiteMatchThreshold
 
 	return match, dependentMatch{
-		Dependent: dependent,
-		Score:     aggregateScore,
-		Row:       r,
+		ComparableDependent: dependent,
+		Score:               aggregateScore,
+		Row:                 r,
+		ForenameScore:       forenameScore,
+		SurnameScore:        surnameScore,
+		PostcodeScore:       postcodeScore,
+		StreetScore:         streetScore,
+		DobScore:            dobScore,
 	}
 }
 
