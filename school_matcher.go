@@ -20,100 +20,26 @@ const definiteMatchThreshold = 0.95
 var numComparisons = 0
 var totalDependents = 0
 
-type dependentMatch struct {
-	Dependent Dependent
-	Score     float64
-	Row       SchoolRollRow
-}
-
-type personBySurname []Person
-
-func (v personBySurname) Len() int           { return len(v) }
-func (v personBySurname) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
-func (v personBySurname) Less(i, j int) bool { return v[i].Surname < v[j].Surname }
-
-type schoolRowBySurname []SchoolRollRow
-
-func (v schoolRowBySurname) Len() int           { return len(v) }
-func (v schoolRowBySurname) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
-func (v schoolRowBySurname) Less(i, j int) bool { return v[i].Surname < v[j].Surname }
-
 // PeopleWithChildrenAtNlcSchool returns just the people from the store
 // that are likely matches for people in the school roll
 func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Person, error) {
 	people := []Person{}
 
-	// Index of postcode to []Row
-	postcodeIndex := make(map[string][]SchoolRollRow)
-	surnameIndex := make(map[string][]SchoolRollRow)
-	schoolRollRows := []SchoolRollRow{}
-	err := spreadsheet.EachRow(inputData.schoolRoll, func(r spreadsheet.Row) {
-		row, err := NewSchoolRollRow(r)
-		if err != nil {
-			return
-		}
-
-		// Full cache
-		schoolRollRows = append(schoolRollRows, row)
-
-		// By Postcode
-		if postcodeIndex[row.Postcode] == nil {
-			postcodeIndex[row.Postcode] = []SchoolRollRow{}
-		}
-
-		postcodeIndex[row.Postcode] = append(postcodeIndex[row.Postcode], row)
-
-		// By Surname
-		if surnameIndex[row.Surname] == nil {
-			surnameIndex[row.Surname] = []SchoolRollRow{}
-		}
-
-		surnameIndex[row.Surname] = append(surnameIndex[row.Surname], row)
-	})
+	schoolRollRows, postcodeIndex, surnameIndex, err := cacheSchoolRoll(inputData.schoolRoll, store)
 	if err != nil {
-		return people, err
+		return nil, err
 	}
-	fmt.Printf("Generated postcode index with %d items\n", len(postcodeIndex))
-	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
 
-	// clean and sort people
-	// for i, person := range store.People {
-	// 	person.Surname = cleanString(person.Surname)
-	// 	person.Forename = cleanString(person.Forename)
-	// 	person.Postcode = cleanString(person.Postcode)
-	// 	person.AddressStreet = cleanString(person.AddressStreet)
-
-	// 	for di, d := range person.Dependents {
-	// 		d.Surname = cleanString(d.Surname)
-	// 		d.Forename = cleanString(d.Forename)
-	// 		d.Person = person
-	// 		person.Dependents[di] = d
-	// 	}
-
-	// 	store.People[i] = person
-	// }
-	sort.Sort(personBySurname(store.People))
-
-	// Sort the rows
-	sort.Sort(schoolRowBySurname(schoolRollRows))
-
-	fmt.Println("Sorted!")
-	fmt.Printf("First person %s, row %s\n", store.People[0].Surname, schoolRollRows[0].Surname)
-	fmt.Printf("Last person %s, row %s\n",
-		store.People[len(store.People)-1].Surname,
-		schoolRollRows[len(schoolRollRows)-1].Surname)
-	fmt.Printf("%d people\n", len(store.People))
-
-	// Find matches
 	var wg sync.WaitGroup
 	dependentChannel := make(chan dependentMatch)
 
-	for _, person := range store.People {
-		rowsInPostcode := postcodeIndex[cleanString(person.Postcode)]
+	comparablePeople := cleanPeople(store.People)
+	for _, person := range comparablePeople {
+		rowsInPostcode := postcodeIndex[person.Postcode]
 
 		for _, dependent := range person.Dependents {
 			wg.Add(1)
-			rowsWithSurname := surnameIndex[cleanString(dependent.Surname)]
+			rowsWithSurname := surnameIndex[dependent.Surname]
 			totalDependents++
 			go checkSchoolRoll(&wg, dependentChannel, dependent, [][]SchoolRollRow{rowsInPostcode, rowsWithSurname, schoolRollRows})
 		}
@@ -144,12 +70,12 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 		// fmt.Printf("Match: %#v\n\n", d)
 		totalMatched++
 		err := writer.Write([]string{
-			fmt.Sprintf("%d", match.Dependent.Person.ClaimNumber),
+			fmt.Sprintf("%d", match.Dependent.Dependent.Person.ClaimNumber),
 			match.Row.Seemis,
 			match.Dependent.Forename, match.Row.Forename,
 			match.Dependent.Surname, match.Row.Surname,
-			match.Dependent.Person.Postcode, match.Row.Postcode,
-			match.Dependent.Person.AddressStreet, match.Row.AddressStreet,
+			match.Dependent.Dependent.Person.Postcode, match.Row.Postcode,
+			match.Dependent.Dependent.Person.AddressStreet, match.Row.AddressStreet,
 			dobString(match.Dependent.Dob), dobString(match.Row.Dob),
 			fmt.Sprintf("%f", match.Score)})
 		if err != nil {
@@ -163,7 +89,89 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 	return people, nil
 }
 
-func checkSchoolRoll(wg *sync.WaitGroup, ch chan dependentMatch, d Dependent, rowsToSearch [][]SchoolRollRow) {
+type dependentMatch struct {
+	Dependent comparableDependent
+	Score     float64
+	Row       SchoolRollRow
+}
+
+// comparablePerson is a Person with cleaned/normalized fields
+type comparablePerson struct {
+	Forename      string
+	Surname       string
+	Postcode      string
+	AddressStreet string
+	Dependents    []comparableDependent
+
+	Person Person
+}
+
+// comparableDependent is a Dependent with cleaned/normalized fields
+type comparableDependent struct {
+	Forename string
+	Surname  string
+
+	// Split Dob into parts on create for quicker comparisons
+	Dob      time.Time
+	DobYear  int
+	DobMonth int
+	DobDay   int
+
+	ComparablePerson comparablePerson
+	Dependent        Dependent
+}
+
+type personBySurname []comparablePerson
+
+func (v personBySurname) Len() int           { return len(v) }
+func (v personBySurname) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v personBySurname) Less(i, j int) bool { return v[i].Surname < v[j].Surname }
+
+type schoolRowBySurname []SchoolRollRow
+
+func (v schoolRowBySurname) Len() int           { return len(v) }
+func (v schoolRowBySurname) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
+func (v schoolRowBySurname) Less(i, j int) bool { return v[i].Surname < v[j].Surname }
+
+func cacheSchoolRoll(input spreadsheet.ParserInput, store PeopleStore) (allRows []SchoolRollRow, postcodeIndex map[string][]SchoolRollRow, surnameIndex map[string][]SchoolRollRow, err error) {
+	postcodeIndex = make(map[string][]SchoolRollRow)
+	surnameIndex = make(map[string][]SchoolRollRow)
+	schoolRollRows := []SchoolRollRow{}
+	err = spreadsheet.EachRow(input, func(r spreadsheet.Row) {
+		row, err := NewSchoolRollRow(r)
+		if err != nil {
+			return
+		}
+
+		// Full cache
+		schoolRollRows = append(schoolRollRows, row)
+
+		// By Postcode
+		if postcodeIndex[row.Postcode] == nil {
+			postcodeIndex[row.Postcode] = []SchoolRollRow{}
+		}
+
+		postcodeIndex[row.Postcode] = append(postcodeIndex[row.Postcode], row)
+
+		// By Surname
+		if surnameIndex[row.Surname] == nil {
+			surnameIndex[row.Surname] = []SchoolRollRow{}
+		}
+
+		surnameIndex[row.Surname] = append(surnameIndex[row.Surname], row)
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	fmt.Printf("Generated postcode index with %d items\n", len(postcodeIndex))
+	fmt.Printf("Generated surname index with %d items\n", len(surnameIndex))
+	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
+	sort.Sort(schoolRowBySurname(schoolRollRows))
+
+	return schoolRollRows, postcodeIndex, surnameIndex, err
+}
+
+func checkSchoolRoll(wg *sync.WaitGroup, ch chan dependentMatch, d comparableDependent, rowsToSearch [][]SchoolRollRow) {
 	defer wg.Done()
 
 	for _, rows := range rowsToSearch {
@@ -175,9 +183,9 @@ func checkSchoolRoll(wg *sync.WaitGroup, ch chan dependentMatch, d Dependent, ro
 	}
 }
 
-func isInSchoolRollRows(d Dependent, rows []SchoolRollRow) (bool, dependentMatch) {
+func isInSchoolRollRows(d comparableDependent, rows []SchoolRollRow) (bool, dependentMatch) {
 	for _, row := range rows {
-		matched, match := row.isFuzzyMatch(d.Person, d)
+		matched, match := row.isFuzzyMatch(d.ComparablePerson, d)
 		if matched {
 			return true, match
 		}
@@ -204,7 +212,7 @@ type SchoolRollRow struct {
 
 func cleanedColByName(r spreadsheet.Row, colName string) string {
 	rowValue := spreadsheet.ColByName(r, colName)
-	return rowValue
+	return cleanString(rowValue)
 }
 
 // NewSchoolRollRow creates a SchoolRollRow struct from a row in the school roll spreadsheet
@@ -230,7 +238,7 @@ func NewSchoolRollRow(r spreadsheet.Row) (SchoolRollRow, error) {
 
 // isFuzzyMatch determins if the dependent/person pair are a match for
 // a school roll row
-func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) (bool, dependentMatch) {
+func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, dependent comparableDependent) (bool, dependentMatch) {
 	numComparisons++
 	forenameScore := compareStrings(dependent.Forename, r.Forename)
 	surnameScore := compareStrings(dependent.Surname, r.Surname)
@@ -255,6 +263,7 @@ func (r SchoolRollRow) isFuzzyMatch(person Person, dependent Dependent) (bool, d
 	// TODO when do we use street vs postcode
 	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore)
 	match := aggregateScore >= definiteMatchThreshold
+
 	return match, dependentMatch{
 		Dependent: dependent,
 		Score:     aggregateScore,
@@ -268,12 +277,12 @@ func calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore 
 }
 
 func compareStrings(nameA, nameB string) float64 {
-	return jellyfish.JaroWinkler(cleanString(nameA), cleanString(nameB))
+	return jellyfish.JaroWinkler(nameA, nameB)
 }
 
 // compareDob returns a score of how likely the dob are to be the same
 // by allowing for the day/month columns to be switched
-func compareDob(d Dependent, r SchoolRollRow) float64 {
+func compareDob(d comparableDependent, r SchoolRollRow) float64 {
 	// Years must match
 	if d.DobYear != r.DobYear {
 		return 0
@@ -296,6 +305,37 @@ var re *regexp.Regexp = regexp.MustCompile(`[^a-zA-Z\d+]`)
 
 func cleanString(str string) string {
 	return strings.ToLower(re.ReplaceAllString(str, ""))
+}
+
+func cleanPeople(people []Person) []comparablePerson {
+	comparablePeople := []comparablePerson{}
+	for _, person := range people {
+		p := comparablePerson{
+			Surname:       cleanString(person.Surname),
+			Forename:      cleanString(person.Forename),
+			Postcode:      cleanString(person.Postcode),
+			AddressStreet: cleanString(person.AddressStreet),
+		}
+
+		for _, dependent := range person.Dependents {
+			d := comparableDependent{
+				Surname:          cleanString(dependent.Surname),
+				Forename:         cleanString(dependent.Forename),
+				Dob:              dependent.Dob,
+				DobYear:          dependent.Dob.Year(),
+				DobMonth:         int(dependent.Dob.Month()),
+				DobDay:           dependent.Dob.Day(),
+				ComparablePerson: p,
+				Dependent:        dependent,
+			}
+			p.Dependents = append(p.Dependents, d)
+		}
+
+		comparablePeople = append(comparablePeople, p)
+	}
+	sort.Sort(personBySurname(comparablePeople))
+
+	return comparablePeople
 }
 
 func takeString(str string, length int) string {

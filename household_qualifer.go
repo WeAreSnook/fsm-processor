@@ -53,9 +53,6 @@ func PeopleInHouseholdsWithChildren(inputData InputData, store PeopleStore) ([]P
 			Surname:  row.Col(2),
 			AgeYears: age,
 			Dob:      dob,
-			DobYear:  dob.Year(),
-			DobMonth: int(dob.Month()),
-			DobDay:   dob.Day(),
 		}
 		person.AddDependent(dependent)
 
