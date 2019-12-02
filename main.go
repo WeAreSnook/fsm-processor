@@ -138,7 +138,7 @@ func main() {
 
 // TODO update this to the expected format
 func writeOutput(store PeopleStore) {
-	file, err := os.Create("report_result.csv")
+	file, err := os.Create("report_people.csv")
 	if err != nil {
 		fmt.Println("Error creating output")
 	}
@@ -147,10 +147,10 @@ func writeOutput(store PeopleStore) {
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	writer.Write([]string{"claim number"})
+	writer.Write([]string{"claim number", "forename", "surname", "addr", "postcode"})
 	for _, person := range store.People {
 		claimStr := fmt.Sprintf("%d", person.ClaimNumber)
-		err := writer.Write([]string{claimStr})
+		err := writer.Write([]string{claimStr, person.Forename, person.Surname, person.AddressStreet, person.Postcode})
 		if err != nil {
 			fmt.Println("Error Writing line")
 		}
