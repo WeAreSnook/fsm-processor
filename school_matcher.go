@@ -66,24 +66,27 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 	matchedDependents := []Dependent{}
 	unmatchedDependents := []Dependent{}
 	for match := range matchChannel {
-		if match.Score >= definiteMatchThreshold {
+		isMatch := match.Score >= definiteMatchThreshold
+		if isMatch {
 			matchedDependents = append(matchedDependents, match.ComparableDependent.Dependent)
 		} else {
 			unmatchedDependents = append(unmatchedDependents, match.ComparableDependent.Dependent)
 		}
 
-		err := writer.Write([]string{
-			fmt.Sprintf("%d", match.ComparableDependent.Dependent.Person.ClaimNumber),
-			match.Row.Seemis,
-			match.ComparableDependent.Dependent.Forename, match.Row.Forename, fmt.Sprintf("%f", match.ForenameScore),
-			match.ComparableDependent.Dependent.Surname, match.Row.Surname, fmt.Sprintf("%f", match.SurnameScore),
-			match.ComparableDependent.Dependent.Person.Postcode, match.Row.Postcode, fmt.Sprintf("%f", match.PostcodeScore),
-			match.ComparableDependent.Dependent.Person.AddressStreet, match.Row.AddressStreet, fmt.Sprintf("%f", match.StreetScore),
-			dobString(match.ComparableDependent.Dob), dobString(match.Row.Dob), fmt.Sprintf("%f", match.DobScore),
-			fmt.Sprintf("%f", match.Score),
-		})
-		if err != nil {
-			fmt.Println("Error Writing line")
+		if isMatch {
+			err := writer.Write([]string{
+				fmt.Sprintf("%d", match.ComparableDependent.Dependent.Person.ClaimNumber),
+				match.Row.Seemis,
+				match.ComparableDependent.Dependent.Forename, match.Row.Forename, fmt.Sprintf("%f", match.ForenameScore),
+				match.ComparableDependent.Dependent.Surname, match.Row.Surname, fmt.Sprintf("%f", match.SurnameScore),
+				match.ComparableDependent.Dependent.Person.Postcode, match.Row.Postcode, fmt.Sprintf("%f", match.PostcodeScore),
+				match.ComparableDependent.Dependent.Person.AddressStreet, match.Row.AddressStreet, fmt.Sprintf("%f", match.StreetScore),
+				dobString(match.ComparableDependent.Dob), dobString(match.Row.Dob), fmt.Sprintf("%f", match.DobScore),
+				fmt.Sprintf("%f", match.Score),
+			})
+			if err != nil {
+				fmt.Println("Error Writing line")
+			}
 		}
 	}
 
