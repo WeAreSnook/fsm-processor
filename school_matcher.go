@@ -18,36 +18,34 @@ import (
 const definiteMatchThreshold = 0.95
 
 var numComparisons = 0
-var totalDependents = 0
 
 // PeopleWithChildrenAtNlcSchool returns just the people from the store
 // that are likely matches for people in the school roll
-func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Person, error) {
-	people := []Person{}
-
+func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matched []Dependent, unmatched []Dependent, err error) {
 	schoolRollRows, postcodeIndex, surnameIndex, err := cacheSchoolRoll(inputData.schoolRoll, store)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var wg sync.WaitGroup
-	dependentChannel := make(chan dependentMatch)
+	matchChannel := make(chan dependentMatch)
 
 	comparablePeople := cleanPeople(store.People)
+	allDependents := []Dependent{}
 	for _, person := range comparablePeople {
 		rowsInPostcode := postcodeIndex[person.Postcode]
 
 		for _, dependent := range person.Dependents {
 			wg.Add(1)
 			rowsWithSurname := surnameIndex[dependent.Surname]
-			totalDependents++
-			go checkSchoolRoll(&wg, dependentChannel, dependent, [][]SchoolRollRow{rowsInPostcode, rowsWithSurname, schoolRollRows})
+			allDependents = append(allDependents, dependent.Dependent)
+			go checkSchoolRoll(&wg, matchChannel, dependent, [][]SchoolRollRow{rowsInPostcode, rowsWithSurname, schoolRollRows})
 		}
 	}
 
 	go func() {
 		wg.Wait()
-		close(dependentChannel)
+		close(matchChannel)
 	}()
 
 	file, err := os.Create("report_fuzzy_matches.csv")
@@ -65,10 +63,15 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 		return t.Format("02-01-06")
 	}
 
-	totalMatched := 0
-	for match := range dependentChannel {
-		// fmt.Printf("Match: %#v\n\n", d)
-		totalMatched++
+	matchedDependents := []Dependent{}
+	unmatchedDependents := []Dependent{}
+	for match := range matchChannel {
+		if match.Score >= definiteMatchThreshold {
+			matchedDependents = append(matchedDependents, match.ComparableDependent.Dependent)
+		} else {
+			unmatchedDependents = append(unmatchedDependents, match.ComparableDependent.Dependent)
+		}
+
 		err := writer.Write([]string{
 			fmt.Sprintf("%d", match.ComparableDependent.Dependent.Person.ClaimNumber),
 			match.Row.Seemis,
@@ -84,10 +87,10 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) ([]Pe
 		}
 	}
 
-	fmt.Printf("%d dependents in NLC out of %d\n", totalMatched, totalDependents)
+	fmt.Printf("%d dependents in NLC, %d unmatched, out of %d total\n", len(matchedDependents), len(unmatchedDependents), len(allDependents))
 	fmt.Printf("%d comparisons\n", numComparisons)
 
-	return people, nil
+	return matchedDependents, unmatchedDependents, nil
 }
 
 type dependentMatch struct {
@@ -177,16 +180,24 @@ func cacheSchoolRoll(input spreadsheet.ParserInput, store PeopleStore) (allRows 
 	return schoolRollRows, postcodeIndex, surnameIndex, err
 }
 
-func checkSchoolRoll(wg *sync.WaitGroup, ch chan dependentMatch, d comparableDependent, rowsToSearch [][]SchoolRollRow) {
+func checkSchoolRoll(wg *sync.WaitGroup, matchesChan chan dependentMatch, d comparableDependent, rowsToSearch [][]SchoolRollRow) {
 	defer wg.Done()
 
+	var bestMatch dependentMatch
 	for _, rows := range rowsToSearch {
 		matched, match := isInSchoolRollRows(d, rows)
+
+		if match.Score > bestMatch.Score {
+			bestMatch = match
+		}
+
 		if matched {
-			ch <- match
+			matchesChan <- match
 			return
 		}
 	}
+
+	matchesChan <- bestMatch
 }
 
 func isInSchoolRollRows(d comparableDependent, rows []SchoolRollRow) (bool, dependentMatch) {

@@ -26,9 +26,6 @@ type Dependent struct {
 	Surname  string
 	AgeYears int
 	Dob      time.Time
-
-	// TODO:
-	InNlcSchool bool
 }
 
 // IsSameAs checks if two Person structs refer to the same person

@@ -17,7 +17,9 @@ type PersonStorer interface {
 
 // PeopleStore is an in-memory PersonStorer
 type PeopleStore struct {
-	People []Person
+	People                       []Person
+	ReportForEducationDependents []Dependent
+	NlcDependents                []Dependent
 }
 
 // Add a Person to the PersonStore

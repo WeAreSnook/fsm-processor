@@ -109,31 +109,33 @@ func main() {
 	store := PeopleStore{}
 
 	err := AddPeopleWithConsent(privateInputData, &store)
-	if err != nil {
-		RespondWith(&store, err)
-		return
-	}
+	handleErr(err, store)
 	fmt.Printf("%d people with consent\n", len(store.People))
 
 	store.People, err = PeopleInHouseholdsWithChildren(privateInputData, store)
-	if err != nil {
-		RespondWith(&store, err)
-		return
-	}
+	handleErr(err, store)
 	fmt.Printf("%d people after household check\n", len(store.People))
 
 	store.People, err = PeopleWithQualifyingIncomes(privateInputData, store)
-	if err != nil {
-		RespondWith(&store, err)
-		return
-	}
+	handleErr(err, store)
 	fmt.Printf("%d people after income qualifying\n", len(store.People))
 
-	store.People, err = PeopleWithChildrenAtNlcSchool(privateInputData, store)
+	nlcDependents, nonNlcDependents, err := PeopleWithChildrenAtNlcSchool(privateInputData, store)
+	handleErr(err, store)
+	store.ReportForEducationDependents = nonNlcDependents
+	store.NlcDependents = nlcDependents
+	fmt.Printf("%d dependents in NLC schools, %d unamtched\n", len(nlcDependents), len(nonNlcDependents))
 
 	writeOutput(store)
 
 	RespondWith(&store, nil)
+}
+
+func handleErr(err error, store PeopleStore) {
+	if err != nil {
+		RespondWith(&store, err)
+		return
+	}
 }
 
 // TODO update this to the expected format
