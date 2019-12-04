@@ -38,6 +38,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 					ClaimNumber:       claimNumber,
 					Postcode:          spreadsheet.ColByName(row, "PostCode"),
 					AddressStreet:     spreadsheet.ColByName(row, "Address1"),
+					Nino:              spreadsheet.ColByName(row, "NINO"),
 					BenefitExtractRow: row,
 				},
 			)
