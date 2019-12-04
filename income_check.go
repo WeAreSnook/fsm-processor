@@ -170,10 +170,6 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 		passportedStdClaimIndicator == "Income Support" ||
 		passportedStdClaimIndicator == "JSA(IB)"
 
-	// TODO determine this
-	// - Add FetchRowByColValue(colName string, value string) Row to parsers?
-	// - Add AddIndex(colName string) to parsers that can speed up the above? by generating an internal map[string] spreadsheet.Row
-	//			This would have the downside of having to parse the entire file once. Maybe by using another internal parser so that it doesnt mess with .Next(). Could maybe be done concurrently?
 	ucQualifier := false
 	if universalCreditRow != nil {
 		benefitAmountStr := spreadsheet.ColByName(universalCreditRow, "aa")
