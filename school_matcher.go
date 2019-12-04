@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"regexp"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
-	jellyfish "github.com/jamesturk/go-jellyfish"
 )
 
 const definiteMatchThreshold = 0.95
@@ -232,7 +229,7 @@ type SchoolRollRow struct {
 
 func cleanedColByName(r spreadsheet.Row, colName string) string {
 	rowValue := spreadsheet.ColByName(r, colName)
-	return cleanString(rowValue)
+	return CleanString(rowValue)
 }
 
 // NewSchoolRollRow creates a SchoolRollRow struct from a row in the school roll spreadsheet
@@ -258,25 +255,25 @@ func NewSchoolRollRow(r spreadsheet.Row) (SchoolRollRow, error) {
 
 // isFuzzyMatch determins if the dependent/person pair are a match for
 // a school roll row
-func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, dependent comparableDependent) (bool, dependentMatch) {
+func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, d comparableDependent) (bool, dependentMatch) {
 	numComparisons++
-	forenameScore := compareStrings(dependent.Forename, r.Forename)
-	surnameScore := compareStrings(dependent.Surname, r.Surname)
+	forenameScore := CompareStrings(d.Forename, r.Forename)
+	surnameScore := CompareStrings(d.Surname, r.Surname)
 
 	combinedNameScore := (forenameScore + surnameScore) / 2
 	if combinedNameScore < 0.7 {
 		return false, dependentMatch{}
 	}
 
-	dobScore := compareDob(dependent, r)
+	dobScore := compareDob(d, r)
 	if dobScore == 0 {
 		return false, dependentMatch{}
 	}
 
-	postcodeScore := compareStrings(person.Postcode, r.Postcode)
+	postcodeScore := CompareStrings(person.Postcode, r.Postcode)
 
 	// We compare only the first 30 characters, as limit in one sheet is 32 and the other is 30
-	streetScore := compareStrings(takeString(person.AddressStreet, 30), takeString(r.AddressStreet, 30))
+	streetScore := CompareStrings(takeString(person.AddressStreet, 30), takeString(r.AddressStreet, 30))
 
 	addressScore := math.Max(postcodeScore, streetScore)
 
@@ -284,8 +281,12 @@ func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, dependent comparabl
 	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore)
 	match := aggregateScore >= definiteMatchThreshold
 
+	if match {
+		d.Dependent.Seemis = r.Seemis
+	}
+
 	return match, dependentMatch{
-		ComparableDependent: dependent,
+		ComparableDependent: d,
 		Score:               aggregateScore,
 		Row:                 r,
 		ForenameScore:       forenameScore,
@@ -299,10 +300,6 @@ func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, dependent comparabl
 // Score is weighted twice for dob and postcode
 func calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore float64) float64 {
 	return (forenameScore + surnameScore + (2 * dobScore) + (2 * addressScore)) / 6
-}
-
-func compareStrings(nameA, nameB string) float64 {
-	return jellyfish.JaroWinkler(nameA, nameB)
 }
 
 // compareDob returns a score of how likely the dob are to be the same
@@ -326,26 +323,20 @@ func compareDob(d comparableDependent, r SchoolRollRow) float64 {
 	return 0
 }
 
-var re *regexp.Regexp = regexp.MustCompile(`[^a-zA-Z\d+]`)
-
-func cleanString(str string) string {
-	return strings.ToLower(re.ReplaceAllString(str, ""))
-}
-
 func cleanPeople(people []Person) []comparablePerson {
 	comparablePeople := []comparablePerson{}
 	for _, person := range people {
 		p := comparablePerson{
-			Surname:       cleanString(person.Surname),
-			Forename:      cleanString(person.Forename),
-			Postcode:      cleanString(person.Postcode),
-			AddressStreet: cleanString(person.AddressStreet),
+			Surname:       CleanString(person.Surname),
+			Forename:      CleanString(person.Forename),
+			Postcode:      CleanString(person.Postcode),
+			AddressStreet: CleanString(person.AddressStreet),
 		}
 
 		for _, dependent := range person.Dependents {
 			d := comparableDependent{
-				Surname:          cleanString(dependent.Surname),
-				Forename:         cleanString(dependent.Forename),
+				Surname:          CleanString(dependent.Surname),
+				Forename:         CleanString(dependent.Forename),
 				Dob:              dependent.Dob,
 				DobYear:          dependent.Dob.Year(),
 				DobMonth:         int(dependent.Dob.Month()),

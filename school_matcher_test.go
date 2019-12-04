@@ -7,7 +7,7 @@ func TestCompareStrings(t *testing.T) {
 		nameA := "chris"
 		nameB := "chris"
 
-		score := compareStrings(nameA, nameB)
+		score := CompareStrings(nameA, nameB)
 
 		if score < 1 {
 			t.Fatalf("Expected score 1 but got %f", score)
@@ -18,7 +18,7 @@ func TestCompareStrings(t *testing.T) {
 		nameA := "chris"
 		nameB := "chriss"
 
-		score := compareStrings(nameA, nameB)
+		score := CompareStrings(nameA, nameB)
 
 		if score < 0.9 {
 			t.Fatalf("Expected score > 0.9 but got %f", score)
@@ -29,7 +29,7 @@ func TestCompareStrings(t *testing.T) {
 		nameA := "chris"
 		nameB := "bob"
 
-		score := compareStrings(nameA, nameB)
+		score := CompareStrings(nameA, nameB)
 
 		if score > 0.1 {
 			t.Fatalf("Expected score < 0.1 but got %f", score)

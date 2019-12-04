@@ -49,6 +49,19 @@ func CountRows(input ParserInput) int {
 	return total
 }
 
+// CreateIndex returns a map of rowKey => []Row. rowKey is created by the keyCreator function, which takes a cell value and returns a rowKey
+func CreateIndex(i ParserInput, colName string, rowKeyCreator func(string) string) (map[string][]Row, error) {
+	index := make(map[string][]Row)
+
+	err := EachRow(i, func(r Row) {
+		baseKey := ColByName(r, colName)
+		key := rowKeyCreator(baseKey)
+		index[key] = append(index[key], r)
+	})
+
+	return index, err
+}
+
 // AssertHeadersExist ensures the provided headers exist and exits if they don't
 func AssertHeadersExist(p Parser, expectedHeaders []string) error {
 	for _, hdr := range expectedHeaders {
