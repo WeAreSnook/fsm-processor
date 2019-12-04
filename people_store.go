@@ -19,7 +19,7 @@ type PersonStorer interface {
 type PeopleStore struct {
 	People                       []Person
 	ReportForEducationDependents []Dependent
-	NlcDependents                []Dependent
+	AwardDependents              []Dependent
 }
 
 // Add a Person to the PersonStore

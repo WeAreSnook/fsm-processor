@@ -123,8 +123,10 @@ func main() {
 	nlcDependents, nonNlcDependents, err := PeopleWithChildrenAtNlcSchool(privateInputData, store)
 	handleErr(err, store)
 	store.ReportForEducationDependents = nonNlcDependents
-	store.NlcDependents = nlcDependents
+	store.AwardDependents = nlcDependents
 	fmt.Printf("%d dependents in NLC schools, %d unamtched\n", len(nlcDependents), len(nonNlcDependents))
+
+	FillExistingGrants(privateInputData, &store)
 
 	writeOutput(store)
 
