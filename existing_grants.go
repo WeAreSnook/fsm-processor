@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -23,6 +26,17 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 
 	matches := 0
 
+	file, err := os.Create("report_existing_awards_matches.csv")
+	if err != nil {
+		fmt.Println("Error creating output")
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	writer.Write([]string{"seemis", "claim", "pupil forename", "award forename", "full forename score", "truncated pupil forename", "truncated award forename", "truncated forename score", "pupil surname", "award surname", "combined score", "truncated combined score"})
+
 	for index, dependent := range store.AwardDependents {
 		nino := CleanString(dependent.Person.Nino)
 		awardRows := ninoIndex[nino]
@@ -32,28 +46,54 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 		fmt.Println(dependent)
 		fmt.Println(dependent.Person)
 
+		var bestMatch spreadsheet.Row
+		bestMatchScore := 0.0
+		bestMatchTruncatedScore := 0.0
+		bestMatchForenameScore := 0.0
+		bestMatchTruncatedForenameScore := 0.0
 		for _, r := range awardRows {
 			pupilForename := spreadsheet.ColByName(r, "Pupil Forename")
 			pupilSurname := spreadsheet.ColByName(r, "Pupil Surname")
-			forenameScore := CompareCleanedStrings(dependent.Forename, pupilForename)
-			surnameScore := CompareCleanedStrings(dependent.Surname, pupilSurname)
+			forenameScore := CompareCleanedStrings(dependent.SeemisForename, pupilForename)
+			truncatedForenameScore := CompareCleanedStrings(truncateName(dependent.SeemisForename), truncateName(pupilForename))
+			surnameScore := CompareCleanedStrings(dependent.SeemisSurname, pupilSurname)
 			combinedScore := (forenameScore + surnameScore) / 2
-			isMatch := forenameScore > 0.95 || combinedScore > 0.95
+			truncatedCombinedScore := (truncatedForenameScore + surnameScore) / 2
 
-			fmt.Printf("Row for %s %s (%f)\n", pupilForename, pupilSurname, forenameScore)
+			fmt.Printf("Row for %s %s (%f)\n", pupilForename, pupilSurname, combinedScore)
 
-			if isMatch {
-				matches++
-				fsmGranted := spreadsheet.ColByName(r, "FSM Approved") != ""
-				cgGranted := spreadsheet.ColByName(r, "Payrun Date") != ""
-
-				fmt.Printf("Is match. FSM %t, CG %t\n", fsmGranted, cgGranted)
-
-				dependent.ExistingFSM = fsmGranted
-				dependent.ExistingCG = cgGranted
-				store.AwardDependents[index] = dependent
-				break
+			if combinedScore > bestMatchScore {
+				bestMatch = r
+				bestMatchTruncatedScore = truncatedCombinedScore
+				bestMatchScore = combinedScore
+				bestMatchForenameScore = forenameScore
+				bestMatchTruncatedForenameScore = truncatedForenameScore
 			}
+		}
+
+		isMatch := bestMatchScore >= 0.95
+
+		if isMatch {
+			matches++
+			fsmGranted := spreadsheet.ColByName(bestMatch, "FSM Approved") != ""
+			cgGranted := spreadsheet.ColByName(bestMatch, "Payrun Date") != ""
+
+			fmt.Printf("Is match. FSM %t, CG %t\n", fsmGranted, cgGranted)
+
+			dependent.ExistingFSM = fsmGranted
+			dependent.ExistingCG = cgGranted
+			store.AwardDependents[index] = dependent
+		}
+
+		// Log the best match
+		if bestMatchScore > 0 {
+			writer.Write([]string{
+				dependent.Seemis, fmt.Sprintf("%d", dependent.Person.ClaimNumber),
+				dependent.SeemisForename, spreadsheet.ColByName(bestMatch, "Pupil Forename"), fmt.Sprintf("%f", bestMatchForenameScore),
+				truncateName(dependent.SeemisForename), truncateName(spreadsheet.ColByName(bestMatch, "Pupil Forename")), fmt.Sprintf("%f", bestMatchTruncatedForenameScore),
+				dependent.SeemisSurname, spreadsheet.ColByName(bestMatch, "Pupil Surname"),
+				fmt.Sprintf("%f", bestMatchScore), fmt.Sprintf("%f", bestMatchTruncatedScore),
+			})
 		}
 
 		fmt.Println("=============")
@@ -72,4 +112,10 @@ func findDependentIndex(dependents []Dependent, forename, surname, nino string) 
 		}
 	}
 	return -1, ErrPersonNotFound
+}
+
+func truncateName(name string) string {
+	punctuationToSpaces := CleanRegex.ReplaceAllString(name, " ")
+	parts := strings.Split(strings.TrimSpace(punctuationToSpaces), " ")
+	return parts[0]
 }
