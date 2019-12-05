@@ -64,10 +64,13 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 	unmatchedDependents := []Dependent{}
 	for match := range matchChannel {
 		isMatch := match.Score >= definiteMatchThreshold
+		dependent := match.ComparableDependent.Dependent
+		dependent.SeemisForename = spreadsheet.ColByName(match.Row.OriginalRow, "Forename")
+		dependent.SeemisSurname = spreadsheet.ColByName(match.Row.OriginalRow, "Surname")
 		if isMatch {
-			matchedDependents = append(matchedDependents, match.ComparableDependent.Dependent)
+			matchedDependents = append(matchedDependents, dependent)
 		} else {
-			unmatchedDependents = append(unmatchedDependents, match.ComparableDependent.Dependent)
+			unmatchedDependents = append(unmatchedDependents, dependent)
 		}
 
 		if isMatch {
@@ -198,8 +201,8 @@ func checkSchoolRoll(wg *sync.WaitGroup, matchesChan chan dependentMatch, d comp
 	}
 
 	if bestMatch.Score > 0 {
-	matchesChan <- bestMatch
-}
+		matchesChan <- bestMatch
+	}
 }
 
 func isInSchoolRollRows(d comparableDependent, rows []SchoolRollRow) (bool, dependentMatch) {
@@ -227,6 +230,8 @@ type SchoolRollRow struct {
 	DobYear  int
 	DobMonth int
 	DobDay   int
+
+	OriginalRow spreadsheet.Row
 }
 
 func cleanedColByName(r spreadsheet.Row, colName string) string {
@@ -252,6 +257,7 @@ func NewSchoolRollRow(r spreadsheet.Row) (SchoolRollRow, error) {
 		DobMonth:      int(dob.Month()),
 		DobDay:        dob.Day(),
 		Seemis:        spreadsheet.ColByName(r, "SEEMIS reference"),
+		OriginalRow:   r,
 	}, nil
 }
 
@@ -346,6 +352,7 @@ func cleanPeople(people []Person) []comparablePerson {
 				ComparablePerson: p,
 				Dependent:        dependent,
 			}
+
 			p.Dependents = append(p.Dependents, d)
 		}
 

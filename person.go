@@ -36,6 +36,10 @@ type Dependent struct {
 	NewFSM      bool
 	NewCG       bool
 	Award       string // Just the new award that they aren't registered for. "FSM", "CG", or "Both"
+
+	// Data from school roll (seemis)
+	SeemisForename string
+	SeemisSurname  string
 }
 
 func (p Person) String() string {
