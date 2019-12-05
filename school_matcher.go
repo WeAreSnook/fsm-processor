@@ -65,9 +65,9 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 	for match := range matchChannel {
 		isMatch := match.Score >= definiteMatchThreshold
 		dependent := match.ComparableDependent.Dependent
-		dependent.SeemisForename = spreadsheet.ColByName(match.Row.OriginalRow, "Forename")
-		dependent.SeemisSurname = spreadsheet.ColByName(match.Row.OriginalRow, "Surname")
 		if isMatch {
+			dependent.SeemisForename = spreadsheet.ColByName(match.Row.OriginalRow, "Forename")
+			dependent.SeemisSurname = spreadsheet.ColByName(match.Row.OriginalRow, "Surname")
 			matchedDependents = append(matchedDependents, dependent)
 		} else {
 			unmatchedDependents = append(unmatchedDependents, dependent)
@@ -77,8 +77,8 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 			err := writer.Write([]string{
 				fmt.Sprintf("%d", match.ComparableDependent.Dependent.Person.ClaimNumber),
 				match.Row.Seemis,
-				match.ComparableDependent.Dependent.Forename, match.Row.Forename, fmt.Sprintf("%f", match.ForenameScore),
-				match.ComparableDependent.Dependent.Surname, match.Row.Surname, fmt.Sprintf("%f", match.SurnameScore),
+				match.ComparableDependent.Dependent.SeemisForename, match.Row.Forename, fmt.Sprintf("%f", match.ForenameScore),
+				match.ComparableDependent.Dependent.SeemisSurname, match.Row.Surname, fmt.Sprintf("%f", match.SurnameScore),
 				match.ComparableDependent.Dependent.Person.Postcode, match.Row.Postcode, fmt.Sprintf("%f", match.PostcodeScore),
 				match.ComparableDependent.Dependent.Person.AddressStreet, match.Row.AddressStreet, fmt.Sprintf("%f", match.StreetScore),
 				dobString(match.ComparableDependent.Dob), dobString(match.Row.Dob), fmt.Sprintf("%f", match.DobScore),
@@ -186,7 +186,9 @@ func cacheSchoolRoll(input spreadsheet.ParserInput, store PeopleStore) (allRows 
 func checkSchoolRoll(wg *sync.WaitGroup, matchesChan chan dependentMatch, d comparableDependent, rowsToSearch [][]SchoolRollRow) {
 	defer wg.Done()
 
-	var bestMatch dependentMatch
+	bestMatch := dependentMatch{
+		ComparableDependent: d,
+	}
 	for _, rows := range rowsToSearch {
 		matched, match := isInSchoolRollRows(d, rows)
 
@@ -200,9 +202,7 @@ func checkSchoolRoll(wg *sync.WaitGroup, matchesChan chan dependentMatch, d comp
 		}
 	}
 
-	if bestMatch.Score > 0 {
-		matchesChan <- bestMatch
-	}
+	matchesChan <- bestMatch
 }
 
 func isInSchoolRollRows(d comparableDependent, rows []SchoolRollRow) (bool, dependentMatch) {
