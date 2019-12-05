@@ -41,11 +41,6 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 		nino := CleanString(dependent.Person.Nino)
 		awardRows := ninoIndex[nino]
 
-		fmt.Println("===============")
-		fmt.Printf("Found %d matching rows for dependent/parent:\n", len(awardRows))
-		fmt.Println(dependent)
-		fmt.Println(dependent.Person)
-
 		var bestMatch spreadsheet.Row
 		bestMatchScore := 0.0
 		bestMatchTruncatedScore := 0.0
@@ -59,8 +54,6 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 			surnameScore := CompareCleanedStrings(dependent.SeemisSurname, pupilSurname)
 			combinedScore := (forenameScore + surnameScore) / 2
 			truncatedCombinedScore := (truncatedForenameScore + surnameScore) / 2
-
-			fmt.Printf("Row for %s %s (%f)\n", pupilForename, pupilSurname, combinedScore)
 
 			if combinedScore > bestMatchScore {
 				bestMatch = r
@@ -78,8 +71,6 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 			fsmGranted := spreadsheet.ColByName(bestMatch, "FSM Approved") != ""
 			cgGranted := spreadsheet.ColByName(bestMatch, "Payrun Date") != ""
 
-			fmt.Printf("Is match. FSM %t, CG %t\n", fsmGranted, cgGranted)
-
 			dependent.ExistingFSM = fsmGranted
 			dependent.ExistingCG = cgGranted
 			store.AwardDependents[index] = dependent
@@ -95,8 +86,6 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 				fmt.Sprintf("%f", bestMatchScore), fmt.Sprintf("%f", bestMatchTruncatedScore),
 			})
 		}
-
-		fmt.Println("=============")
 	}
 
 	fmt.Printf("matched %d out of %d dependents in fsm/cg awards\n", matches, len(store.AwardDependents))
