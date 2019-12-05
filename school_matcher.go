@@ -197,7 +197,9 @@ func checkSchoolRoll(wg *sync.WaitGroup, matchesChan chan dependentMatch, d comp
 		}
 	}
 
+	if bestMatch.Score > 0 {
 	matchesChan <- bestMatch
+}
 }
 
 func isInSchoolRollRows(d comparableDependent, rows []SchoolRollRow) (bool, dependentMatch) {
