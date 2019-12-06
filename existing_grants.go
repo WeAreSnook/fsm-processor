@@ -11,17 +11,13 @@ import (
 
 // FillExistingGrants iterates over the existing FSM and CG grants
 // and adds the data to appropriate dependents
-func FillExistingGrants(inputData InputData, store *PeopleStore) {
-	if len(store.AwardDependents) == 0 {
-		return
-	}
-
+func FillExistingGrants(inputData InputData, dependents []Dependent) []Dependent {
 	ninoIndex, err := spreadsheet.CreateIndex(inputData.fsmCgAwards, "NI Number", func(nino string) string {
 		return CleanString(nino)
 	})
 
 	if err != nil {
-		return
+		return []Dependent{}
 	}
 
 	matches := 0
@@ -37,7 +33,7 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 
 	writer.Write([]string{"seemis", "claim", "pupil forename", "award forename", "full forename score", "truncated pupil forename", "truncated award forename", "truncated forename score", "pupil surname", "award surname", "combined score", "truncated combined score"})
 
-	for index, dependent := range store.AwardDependents {
+	for index, dependent := range dependents {
 		nino := CleanString(dependent.Person.Nino)
 		awardRows := ninoIndex[nino]
 
@@ -71,9 +67,14 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 			fsmGranted := spreadsheet.ColByName(bestMatch, "FSM Approved") != ""
 			cgGranted := spreadsheet.ColByName(bestMatch, "Payrun Date") != ""
 
-			dependent.ExistingFSM = fsmGranted
-			dependent.ExistingCG = cgGranted
-			store.AwardDependents[index] = dependent
+			d := dependent
+			d.ExistingFSM = fsmGranted
+			d.ExistingCG = cgGranted
+			d.AwardsFsmApproved = spreadsheet.ColByName(bestMatch, "FSM Approved")
+			d.AwardsNINumber = spreadsheet.ColByName(bestMatch, "NI Number")
+			d.AwardsPayrunDate = spreadsheet.ColByName(bestMatch, "Payrun Date")
+
+			dependents[index] = d
 		}
 
 		// Log the best match
@@ -88,7 +89,8 @@ func FillExistingGrants(inputData InputData, store *PeopleStore) {
 		}
 	}
 
-	fmt.Printf("matched %d out of %d dependents in fsm/cg awards\n", matches, len(store.AwardDependents))
+	fmt.Printf("matched %d out of %d dependents in fsm/cg awards\n", matches, len(dependents))
+	return dependents
 }
 
 func findDependentIndex(dependents []Dependent, forename, surname, nino string) (int, error) {

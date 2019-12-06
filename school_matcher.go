@@ -68,6 +68,10 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 		if isMatch {
 			dependent.SeemisForename = spreadsheet.ColByName(match.Row.OriginalRow, "Forename")
 			dependent.SeemisSurname = spreadsheet.ColByName(match.Row.OriginalRow, "Surname")
+			dependent.YearGroup = spreadsheet.ColByName(match.Row.OriginalRow, "Year/Stage")
+			dependent.SchoolRollRow = match.Row.OriginalRow
+			dependent.NameMatchScore = match.NameScore
+			dependent.AddressMatchScore = match.AddressScore
 			matchedDependents = append(matchedDependents, dependent)
 		} else {
 			unmatchedDependents = append(unmatchedDependents, dependent)
@@ -102,8 +106,10 @@ type dependentMatch struct {
 	Row                 SchoolRollRow
 	ForenameScore       float64
 	SurnameScore        float64
+	NameScore           float64 // Combined forename and surname score (average)
 	PostcodeScore       float64
 	StreetScore         float64
+	AddressScore        float64 // highest of postcode or street score
 	DobScore            float64
 }
 
@@ -302,6 +308,8 @@ func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, d comparableDepende
 		PostcodeScore:       postcodeScore,
 		StreetScore:         streetScore,
 		DobScore:            dobScore,
+		NameScore:           combinedNameScore,
+		AddressScore:        addressScore,
 	}
 }
 

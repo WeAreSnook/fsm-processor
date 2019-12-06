@@ -12,7 +12,7 @@ import (
 // and adds them directly to the PeopleStore
 // Data sources: Consent 360 & Benefit Extract
 func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
-	consentByClaimNumber, err := extractConsentData(inputData)
+	consentDescByClaimNumber, err := extractConsentData(inputData)
 
 	if err != nil {
 		return err
@@ -28,7 +28,8 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 			return
 		}
 
-		hasPermission := consentByClaimNumber[claimNumber]
+		desc := consentDescByClaimNumber[claimNumber]
+		hasPermission := desc != "FSM&CG Consent Removed" && desc != "" // TODO this isn't in our example spreadsheet
 
 		if hasPermission {
 			peopleStore.Add(
@@ -39,6 +40,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 					Postcode:          spreadsheet.ColByName(row, "PostCode"),
 					AddressStreet:     spreadsheet.ColByName(row, "Address1"),
 					Nino:              spreadsheet.ColByName(row, "NINO"),
+					ConsentDesc:       desc,
 					BenefitExtractRow: row,
 				},
 			)
@@ -48,8 +50,8 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 	return err
 }
 
-func extractConsentData(inputData InputData) (map[int]bool, error) {
-	consentData := make(map[int]bool)
+func extractConsentData(inputData InputData) (map[int]string, error) {
+	consentData := make(map[int]string)
 
 	err := spreadsheet.EachRow(inputData.consent360, func(row spreadsheet.Row) {
 		claimNumStr := strings.Replace(row.Col(2), "TEMP", "", 1)
@@ -63,8 +65,7 @@ func extractConsentData(inputData InputData) (map[int]bool, error) {
 		}
 
 		consentDesc := row.Col(0)
-		hasPermission := consentDesc != "FSM&CG Consent Removed" // TODO this isn't in our example spreadsheet
-		consentData[claimNum] = hasPermission
+		consentData[claimNum] = consentDesc
 	})
 
 	return consentData, err

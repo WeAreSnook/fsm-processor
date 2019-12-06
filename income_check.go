@@ -25,6 +25,7 @@ type incomeData struct {
 	taxCreditIncomeStepTwo float32
 	taxCreditFigure        float32
 	combinedQualifier      bool
+	qualifierType          string
 }
 
 // PeopleWithQualifyingIncomes returns just the people in the provided store that qualify
@@ -57,20 +58,28 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 	})
 
 	var wg sync.WaitGroup
-	peopleChannel := make(chan Person)
+	qualifyingPeopleChan := make(chan Person)
 
 	for _, person := range store.People {
 		wg.Add(1)
 		ucRow := rowsByClaimNum[person.ClaimNumber]
-		go qualifyPerson(person, ucRow, peopleChannel, &wg)
+		go qualifyPerson(person, ucRow, qualifyingPeopleChan, &wg)
 	}
 
 	go func() {
 		wg.Wait()
-		close(peopleChannel)
+		close(qualifyingPeopleChan)
 	}()
 
-	for person := range peopleChannel {
+	for person := range qualifyingPeopleChan {
+		for i, d := range person.Dependents {
+			// TODO this algorithm needs updated once Jamie gets back to us
+			// on how we distinguish between qualifying for CG / FSM / Both
+			d.NewCG = true
+			d.NewFSM = true
+			d.Person = person
+			person.Dependents[i] = d
+		}
 		people = append(people, person)
 	}
 
@@ -91,9 +100,10 @@ func qualifyPerson(p Person, universalCreditRow spreadsheet.Row, ch chan Person,
 		incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
 	}
 
-	incomeData.combinedQualifier = determineCombinedQualifier(p, incomeData, universalCreditRow)
+	incomeData.combinedQualifier, incomeData.qualifierType = determineCombinedQualifier(p, incomeData, universalCreditRow)
 
 	if incomeData.combinedQualifier {
+		p.QualiferType = incomeData.qualifierType
 		ch <- p
 	}
 }
@@ -154,7 +164,7 @@ func calculateStepTwo(person Person) float32 {
 	return sumFloatColumns(person.BenefitExtractRow, colNames)
 }
 
-func determineCombinedQualifier(p Person, incomeData incomeData, universalCreditRow spreadsheet.Row) bool {
+func determineCombinedQualifier(p Person, incomeData incomeData, universalCreditRow spreadsheet.Row) (bool, string) {
 	row := p.BenefitExtractRow
 
 	wtc := spreadsheet.FloatColByName(row, "Clmt Working Tax Credits") + spreadsheet.FloatColByName(row, "Ptnr Working Tax Credits")
@@ -179,7 +189,20 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 		}
 	}
 
-	return qualifierA || qualifierB || passportQualifier || ucQualifier
+	qualifies := qualifierA || qualifierB || passportQualifier || ucQualifier
+
+	qualifyType := ""
+	if qualifierA {
+		qualifyType = "CTC ONLY"
+	} else if qualifierB {
+		qualifyType = "CTC & WTC"
+	} else if passportQualifier {
+		qualifyType = "PASSPORTED"
+	} else if ucQualifier {
+		qualifyType = "UC QUALIFIER"
+	}
+
+	return qualifies, qualifyType
 }
 
 func sumFloatColumns(row spreadsheet.Row, colNames []string) float32 {

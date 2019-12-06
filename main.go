@@ -124,9 +124,11 @@ func main() {
 	handleErr(err, store)
 	store.ReportForEducationDependents = nonNlcDependents
 	store.AwardDependents = nlcDependents
-	fmt.Printf("%d dependents in NLC schools, %d unamtched\n", len(nlcDependents), len(nonNlcDependents))
+	fmt.Printf("%d dependents in NLC schools, %d unmatched\n", len(nlcDependents), len(nonNlcDependents))
 
-	FillExistingGrants(privateInputData, &store)
+	store.AwardDependents = FillExistingGrants(privateInputData, store.AwardDependents)
+	fmt.Printf("got %d AwardDependents filled\n", len(store.AwardDependents))
+	GenerateAwardList(privateInputData, store)
 
 	writeOutput(store)
 
