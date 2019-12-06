@@ -21,6 +21,7 @@ type InputData struct {
 	fsmCgAwards     spreadsheet.ParserInput
 	schoolRoll      spreadsheet.ParserInput
 	consent360      spreadsheet.ParserInput
+	filter          spreadsheet.ParserInput
 }
 
 var privateInputData = InputData{
@@ -103,6 +104,14 @@ var privateInputData = InputData{
 			"CLAIMREFERENCE",
 		},
 	},
+	filter: spreadsheet.ParserInput{
+		Path:       "./private-data/filter.xlsx",
+		HasHeaders: true,
+		RequiredHeaders: []string{
+			"claim ref",
+			"seemis ID",
+		},
+	},
 }
 
 func main() {
@@ -129,6 +138,7 @@ func main() {
 	store.AwardDependents = FillExistingGrants(privateInputData, store.AwardDependents)
 	fmt.Printf("got %d AwardDependents filled\n", len(store.AwardDependents))
 	GenerateAwardList(privateInputData, store)
+	GenerateEducationReport(privateInputData, store)
 
 	writeOutput(store)
 

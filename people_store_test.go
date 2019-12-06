@@ -3,8 +3,8 @@ package main
 import "testing"
 
 func TestFindExisting(t *testing.T) {
-	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
-	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
+	chris := Person{Forename: "Chris", Surname: "Sloey"}
+	michael := Person{Forename: "Michael", Surname: "Hayes"}
 
 	store := PeopleStore{
 		People: []Person{
@@ -37,9 +37,9 @@ func TestFindExisting(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
-	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
-	newPerson := Person{Forename: "Bob", Surname: "WOW", AgeYears: 92}
+	chris := Person{Forename: "Chris", Surname: "Sloey"}
+	michael := Person{Forename: "Michael", Surname: "Hayes"}
+	newPerson := Person{Forename: "Bob", Surname: "WOW"}
 
 	store := PeopleStore{
 		People: []Person{
@@ -63,8 +63,8 @@ func TestAdd(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	chris := Person{Forename: "Chris", Surname: "Sloey", AgeYears: 29}
-	michael := Person{Forename: "Michael", Surname: "Hayes", AgeYears: 31}
+	chris := Person{Forename: "Chris", Surname: "Sloey"}
+	michael := Person{Forename: "Michael", Surname: "Hayes"}
 
 	store := PeopleStore{
 		People: []Person{
@@ -74,7 +74,7 @@ func TestUpdate(t *testing.T) {
 	}
 
 	t.Run("updates correct person", func(t *testing.T) {
-		updatedChrisDetails := Person{Forename: "Christopher", Surname: "Sloey", AgeYears: 29}
+		updatedChrisDetails := Person{Forename: "Christopher", Surname: "Sloey"}
 		err := store.Update(updatedChrisDetails)
 
 		if err != nil {

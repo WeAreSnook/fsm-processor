@@ -10,11 +10,14 @@ import (
 
 // GenerateAwardList looks at the AwardDependents and generates an award list spreadsheet
 func GenerateAwardList(inputData InputData, store PeopleStore) {
-	childrenWithNewEntitlements := filterOnlyNewEntitlements(store.AwardDependents)
+	childrenWithNewEntitlements := FilterOnlyNewEntitlements(store.AwardDependents)
 	fmt.Printf("%d out of %d have new entitlements\n", len(childrenWithNewEntitlements), len(store.AwardDependents))
 
-	childrenInMinimumP1 := filterMinimumP1(childrenWithNewEntitlements)
+	childrenInMinimumP1 := FilterMinimumP1(childrenWithNewEntitlements)
 	fmt.Printf("%d are in at least P1\n", len(childrenInMinimumP1))
+
+	dependents := FilterUsingExclusionList(inputData, childrenInMinimumP1)
+	fmt.Printf("Filtered to %d dependents\n", len(dependents))
 
 	// atLeast16, below16 := splitByMinimumAge(inputData, childrenInMinimumP1)
 	// fmt.Printf("%d people at least age 16, %d below\n", len(atLeast16), len(below16))
@@ -22,44 +25,7 @@ func GenerateAwardList(inputData InputData, store PeopleStore) {
 	// TODO for atLeast16 => waiting for a flag to be added to school roll indicating if they are still in education
 	// inEducation := below16
 
-	writeAwardsList(inputData, childrenInMinimumP1)
-}
-
-func filterOnlyNewEntitlements(dependents []Dependent) []Dependent {
-	withNewEntitlements := []Dependent{}
-
-	for _, d := range dependents {
-
-		if d.HasNewEntitlements() {
-			withNewEntitlements = append(withNewEntitlements, d)
-		}
-	}
-
-	return withNewEntitlements
-}
-
-func filterMinimumP1(dependents []Dependent) []Dependent {
-	result := []Dependent{}
-
-	for _, d := range dependents {
-		if d.IsAtLeastP1() {
-			result = append(result, d)
-		}
-	}
-
-	return result
-}
-
-func splitByMinimumAge(inputData InputData, dependents []Dependent) (atThreshold []Dependent, belowThreshold []Dependent) {
-	for _, d := range dependents {
-		if d.IsAtLeast16(inputData.rolloverMode) {
-			atThreshold = append(atThreshold, d)
-		} else {
-			belowThreshold = append(belowThreshold, d)
-		}
-	}
-
-	return
+	writeAwardsList(inputData, dependents)
 }
 
 func writeAwardsList(inputData InputData, dependents []Dependent) {
