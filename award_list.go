@@ -77,7 +77,6 @@ func writeAwardsList(inputData InputData, dependents []Dependent) {
 	}
 }
 
-// TODO find out requirements for this identifier
 var identifier = 0
 
 func buildLine(inputData InputData, d Dependent) []string {

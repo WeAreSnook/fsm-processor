@@ -48,8 +48,6 @@ func GenerateEducationReport(inputData InputData, store PeopleStore) {
 
 	for _, d := range dependents {
 		line := []string{}
-		// fmt.Println("Handling", d)
-
 		// for _, colName := range schoolRollCols {
 		// 	line = append(line, spreadsheet.ColByName(d.SchoolRollRow, colName))
 		// }
