@@ -111,9 +111,14 @@ func writeAwardsList(inputData InputData, dependents []Dependent) {
 	}
 }
 
+// TODO find out requirements for this identifier
+var identifier = 0
+
 func buildLine(inputData InputData, d Dependent) []string {
+	identifier++
 	line := []string{
-		"identifier",
+		fmt.Sprintf("%d", identifier),
+
 		d.Seemis,
 
 		// Benefit Extract Columns
@@ -135,7 +140,7 @@ func buildLine(inputData InputData, d Dependent) []string {
 	} else if d.Person.ConsentDesc == "FSM&CG Consent Removed" {
 		line = append(line, "Refused")
 	} else {
-		line = append(line, "Absent")
+		line = append(line, "Given")
 	}
 
 	// School Roll
