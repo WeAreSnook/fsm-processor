@@ -71,14 +71,6 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 	}()
 
 	for person := range qualifyingPeopleChan {
-		for i, d := range person.Dependents {
-			// TODO this algorithm needs updated once Jamie gets back to us
-			// on how we distinguish between qualifying for CG / FSM / Both
-			d.NewCG = true
-			d.NewFSM = true
-			d.Person = person
-			person.Dependents[i] = d
-		}
 		people = append(people, person)
 	}
 
@@ -99,10 +91,30 @@ func qualifyPerson(p Person, universalCreditRow spreadsheet.Row, ch chan Person,
 		incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
 	}
 
+	// Check for FSM & CG combined qualification
 	incomeData.combinedQualifier, incomeData.qualifierType = determineCombinedQualifier(p, incomeData, universalCreditRow)
-
 	if incomeData.combinedQualifier {
 		p.QualiferType = incomeData.qualifierType
+		for i, d := range p.Dependents {
+			d.NewCG = true
+			d.NewFSM = true
+			d.Person = p
+			p.Dependents[i] = d
+		}
+
+		ch <- p
+		return
+	}
+
+	// Check for CG-only qualification via weekly cts entitlement being greater than 0.0
+	weeklyCtsEntitlement := spreadsheet.FloatColByName(p.BenefitExtractRow, "Weekly CTS  entitlement")
+	if weeklyCtsEntitlement > 0.0 {
+		for i, d := range p.Dependents {
+			d.NewCG = true
+			d.Person = p
+			p.Dependents[i] = d
+		}
+
 		ch <- p
 	}
 }
@@ -200,8 +212,6 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 	} else if ucQualifier {
 		qualifyType = "UC QUALIFIER"
 	}
-
-	// TODO CTS > 0 = CG
 
 	return qualifies, qualifyType
 }
