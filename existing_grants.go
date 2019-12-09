@@ -93,6 +93,8 @@ func FillExistingGrants(inputData InputData, dependents []Dependent) []Dependent
 	return dependents
 }
 
+// TODO need to consider combination of forename + surname + _DATE OF BIRTH_,
+// but it's not currently in the existing awards spreadsheet. We'll need to add this later.
 func findDependentIndex(dependents []Dependent, forename, surname, nino string) (int, error) {
 	for i, dep := range dependents {
 		forenameScore := CompareCleanedStrings(dep.Forename, forename)
