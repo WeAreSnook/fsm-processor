@@ -289,9 +289,9 @@ func (r SchoolRollRow) isFuzzyMatch(person comparablePerson, d comparableDepende
 	// We compare only the first 30 characters, as limit in one sheet is 32 and the other is 30
 	streetScore := CompareStrings(takeString(person.AddressStreet, 30), takeString(r.AddressStreet, 30))
 
+	// Address score is whichever is highest out of postcode, street
 	addressScore := math.Max(postcodeScore, streetScore)
 
-	// TODO when do we use street vs postcode
 	aggregateScore := calculateWeightedScore(forenameScore, surnameScore, dobScore, addressScore)
 	match := aggregateScore >= definiteMatchThreshold
 
@@ -332,8 +332,7 @@ func compareDob(d comparableDependent, r SchoolRollRow) float64 {
 
 	// Year is the same and the month/day is switched
 	if d.DobMonth == r.DobDay && d.DobDay == r.DobMonth {
-		// TODO should this be lower than 1? consult Anne
-		return 1
+		return 0.9
 	}
 
 	return 0

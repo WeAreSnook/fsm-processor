@@ -56,12 +56,6 @@ func (p Person) String() string {
 	return fmt.Sprintf("[Person %s %s, nino: %s, claim no: %d]", p.Forename, p.Surname, p.Nino, p.ClaimNumber)
 }
 
-// IsSameAs checks if two Person structs refer to the same person
-func (p Person) IsSameAs(person Person) bool {
-	// TODO jaro-winkler comparison + dob comparison. See notion note.
-	return p.Forename == person.Forename && p.Surname == person.Surname
-}
-
 // AddDependent adds the provided dependent to the Person
 func (p *Person) AddDependent(d Dependent) {
 	d.Person = *p

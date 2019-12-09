@@ -27,18 +27,6 @@ func (p *PeopleStore) Add(person Person) {
 	p.People = append(p.People, person)
 }
 
-// FindExisting returns a person already in the store with matching details
-// This can be useful for finding by name
-func (p *PeopleStore) FindExisting(person Person) (Person, error) {
-	for _, existingPerson := range p.People {
-		if existingPerson.IsSameAs(person) {
-			return existingPerson, nil
-		}
-	}
-
-	return Person{}, ErrPersonNotFound
-}
-
 // FindByClaimNumber finds an existing person by the provided claim number
 // Returns ErrPersonNotFound if there are no matches
 func (p *PeopleStore) FindByClaimNumber(claimNumber int) (Person, error) {

@@ -6,11 +6,6 @@ import (
 	"os"
 )
 
-/*
- * TODO:
- *   - add first name and last name and date of birth
- */
-
 // GenerateEducationReport generates a spreadsheet of people who were not found in the school roll
 func GenerateEducationReport(inputData InputData, store PeopleStore) {
 	fmt.Printf("Writing education report for %d dependents\n", len(store.ReportForEducationDependents))

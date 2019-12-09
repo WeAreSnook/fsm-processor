@@ -41,7 +41,6 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "aa", "ab", "ac", "ad", "ae",
 	})
 
-	// TODO swap this to generic index based approach
 	var rowsByClaimNum map[int]spreadsheet.Row = make(map[int]spreadsheet.Row)
 	spreadsheet.EachParserRow(universalCreditParser, func(r spreadsheet.Row) {
 		claimNumStr := spreadsheet.ColByName(r, "b")
@@ -201,6 +200,8 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 	} else if ucQualifier {
 		qualifyType = "UC QUALIFIER"
 	}
+
+	// TODO CTS > 0 = CG
 
 	return qualifies, qualifyType
 }

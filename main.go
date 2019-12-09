@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
-	"os"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -137,10 +135,9 @@ func main() {
 
 	store.AwardDependents = FillExistingGrants(privateInputData, store.AwardDependents)
 	fmt.Printf("got %d AwardDependents filled\n", len(store.AwardDependents))
+
 	GenerateAwardList(privateInputData, store)
 	GenerateEducationReport(privateInputData, store)
-
-	writeOutput(store)
 
 	RespondWith(&store, nil)
 }
@@ -149,26 +146,5 @@ func handleErr(err error, store PeopleStore) {
 	if err != nil {
 		RespondWith(&store, err)
 		return
-	}
-}
-
-// TODO update this to the expected format
-func writeOutput(store PeopleStore) {
-	file, err := os.Create("report_people.csv")
-	if err != nil {
-		fmt.Println("Error creating output")
-	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	writer.Write([]string{"claim number", "forename", "surname", "addr", "postcode"})
-	for _, person := range store.People {
-		claimStr := fmt.Sprintf("%d", person.ClaimNumber)
-		err := writer.Write([]string{claimStr, person.Forename, person.Surname, person.AddressStreet, person.Postcode})
-		if err != nil {
-			fmt.Println("Error Writing line")
-		}
 	}
 }
