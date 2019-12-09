@@ -6,6 +6,11 @@ import (
 	"os"
 )
 
+/*
+ * TODO:
+ *   - add first name and last name and date of birth
+ */
+
 // GenerateEducationReport generates a spreadsheet of people who were not found in the school roll
 func GenerateEducationReport(inputData InputData, store PeopleStore) {
 	fmt.Printf("Writing education report for %d dependents\n", len(store.ReportForEducationDependents))
@@ -22,37 +27,21 @@ func GenerateEducationReport(inputData InputData, store PeopleStore) {
 	defer writer.Flush()
 
 	writer.Write([]string{
-		// "SEEMIS reference",
-		// "forename",
-		// "surname",
-		// "Pupil's postcode",
-		// "Pupil's property",
-		// "Pupil's street",
-		// "Pupil's town",
-		// "School Name",
-		// "Year/Stage",
 		"claim",
+		"first name",
+		"last name",
+		"date of birth",
 	})
 
-	// schoolRollCols := []string{
-	// 	"SEEMIS reference",
-	// 	"forename",
-	// 	"surname",
-	// 	"Pupil's postcode",
-	// 	"Pupil's property",
-	// 	"Pupil's street",
-	// 	"Pupil's town",
-	// 	"School Name",
-	// 	"Year/Stage",
-	// }
-
 	for _, d := range dependents {
-		line := []string{}
-		// for _, colName := range schoolRollCols {
-		// 	line = append(line, spreadsheet.ColByName(d.SchoolRollRow, colName))
-		// }
+		dob := d.Dob.Format("02-01-06")
 
-		line = append(line, fmt.Sprintf("%d", d.Person.ClaimNumber))
+		line := []string{
+			fmt.Sprintf("%d", d.Person.ClaimNumber),
+			d.Forename,
+			d.Surname,
+			dob,
+		}
 
 		writer.Write(line)
 	}
