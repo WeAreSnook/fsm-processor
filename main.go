@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
@@ -113,38 +111,8 @@ var privateInputData = InputData{
 }
 
 func main() {
-	store := PeopleStore{}
+	fsmStore := GenerateFsmAwards(privateInputData)
+	ctrStore := GenerateCtrBasedAwards(privateInputData, fsmStore)
 
-	err := AddPeopleWithConsent(privateInputData, &store)
-	handleErr(err, store)
-	fmt.Printf("%d people with consent\n", len(store.People))
-
-	store.People, err = PeopleInHouseholdsWithChildren(privateInputData, store)
-	handleErr(err, store)
-	fmt.Printf("%d people after household check\n", len(store.People))
-
-	store.People, err = PeopleWithQualifyingIncomes(privateInputData, store)
-	handleErr(err, store)
-	fmt.Printf("%d people after income qualifying\n", len(store.People))
-
-	nlcDependents, nonNlcDependents, err := PeopleWithChildrenAtNlcSchool(privateInputData, store)
-	handleErr(err, store)
-	store.ReportForEducationDependents = nonNlcDependents
-	store.AwardDependents = nlcDependents
-	fmt.Printf("%d dependents in NLC schools, %d unmatched\n", len(nlcDependents), len(nonNlcDependents))
-
-	store.AwardDependents = FillExistingGrants(privateInputData, store.AwardDependents)
-	fmt.Printf("got %d AwardDependents filled\n", len(store.AwardDependents))
-
-	GenerateAwardList(privateInputData, store)
-	GenerateEducationReport(privateInputData, store)
-
-	RespondWith(&store, nil)
-}
-
-func handleErr(err error, store PeopleStore) {
-	if err != nil {
-		RespondWith(&store, err)
-		return
-	}
+	RespondWith(&ctrStore, nil)
 }
