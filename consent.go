@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -32,18 +33,15 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 		hasPermission := desc != "FSM&CG Consent Removed" && desc != "" // TODO this isn't in our example spreadsheet
 
 		if hasPermission {
-			peopleStore.Add(
-				Person{
-					Forename:          spreadsheet.ColByName(row, "Clmt First Forename"),
-					Surname:           spreadsheet.ColByName(row, "Clmt Surname"),
-					ClaimNumber:       claimNumber,
-					Postcode:          spreadsheet.ColByName(row, "PostCode"),
-					AddressStreet:     spreadsheet.ColByName(row, "Address1"),
-					Nino:              spreadsheet.ColByName(row, "NINO"),
-					ConsentDesc:       desc,
-					BenefitExtractRow: row,
-				},
-			)
+			person, err := NewPersonFromBenefitExtract(row)
+
+			if err != nil {
+				fmt.Println("Error creating person from benefit extract")
+				return
+			}
+
+			person.ConsentDesc = desc
+			peopleStore.Add(person)
 		}
 	})
 

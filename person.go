@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,6 +52,27 @@ type Dependent struct {
 	AddressMatchScore float64
 
 	Person Person
+}
+
+// NewPersonFromBenefitExtract creates a person based on the provided benefit extract row
+func NewPersonFromBenefitExtract(r spreadsheet.Row) (Person, error) {
+	claimNumStr := spreadsheet.ColByName(r, "Claim Number")
+	claimNumber, err := strconv.Atoi(claimNumStr)
+
+	if err != nil {
+		log.Printf("Error parsing claim number from benefits extract %s", claimNumStr)
+		return Person{}, err
+	}
+
+	return Person{
+		Forename:          spreadsheet.ColByName(r, "Clmt First Forename"),
+		Surname:           spreadsheet.ColByName(r, "Clmt Surname"),
+		ClaimNumber:       claimNumber,
+		Postcode:          spreadsheet.ColByName(r, "PostCode"),
+		AddressStreet:     spreadsheet.ColByName(r, "Address1"),
+		Nino:              spreadsheet.ColByName(r, "NINO"),
+		BenefitExtractRow: r,
+	}, nil
 }
 
 func (p Person) String() string {
