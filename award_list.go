@@ -9,29 +9,10 @@ import (
 )
 
 // GenerateAwardList looks at the AwardDependents and generates an award list spreadsheet
-func GenerateAwardList(inputData InputData, store PeopleStore) {
-	childrenWithNewEntitlements := FilterOnlyNewEntitlements(store.AwardDependents)
-	fmt.Printf("%d out of %d have new entitlements\n", len(childrenWithNewEntitlements), len(store.AwardDependents))
+func GenerateAwardList(inputData InputData, store PeopleStore, name string) {
+	fmt.Printf("Writing awards list for %d dependents\n", len(store.AwardDependents))
 
-	childrenInMinimumP1 := FilterMinimumP1(childrenWithNewEntitlements)
-	fmt.Printf("%d are in at least P1\n", len(childrenInMinimumP1))
-
-	dependents := FilterUsingExclusionList(inputData, childrenInMinimumP1)
-	fmt.Printf("Filtered to %d dependents\n", len(dependents))
-
-	// atLeast16, below16 := splitByMinimumAge(inputData, childrenInMinimumP1)
-	// fmt.Printf("%d people at least age 16, %d below\n", len(atLeast16), len(below16))
-
-	// TODO for atLeast16 => waiting for a flag to be added to school roll indicating if they are still in education
-	// inEducation := below16
-
-	writeAwardsList(inputData, dependents)
-}
-
-func writeAwardsList(inputData InputData, dependents []Dependent) {
-	fmt.Printf("Writing awards list for %d dependents\n", len(dependents))
-
-	file, err := os.Create("report_awards.csv")
+	file, err := os.Create(fmt.Sprintf("report_awards_%s.csv", name))
 	if err != nil {
 		fmt.Println("Error creating output")
 	}
@@ -72,7 +53,7 @@ func writeAwardsList(inputData InputData, dependents []Dependent) {
 		"FSM Qualifier", "check attendance",
 	})
 
-	for _, d := range dependents {
+	for _, d := range store.AwardDependents {
 		writer.Write(buildLine(inputData, d))
 	}
 }
@@ -136,7 +117,7 @@ func buildLine(inputData InputData, d Dependent) []string {
 		line = append(line, "")
 	}
 
-	// 	// FSM&CG Awards
+	// FSM&CG Awards
 	line = append(line, d.AwardsFsmApproved)
 
 	// New

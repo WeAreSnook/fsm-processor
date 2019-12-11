@@ -77,6 +77,27 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 	return people, nil
 }
 
+// AddPeopleWithCtr adds people to the store who are receiging a
+// weekly cts entitlement greater than 0
+func AddPeopleWithCtr(inputData InputData, store *PeopleStore) {
+	spreadsheet.EachRow(inputData.benefitExtract, func(r spreadsheet.Row) {
+		weeklyCtsEntitlement := spreadsheet.FloatColByName(r, "Weekly CTS  entitlement")
+
+		if weeklyCtsEntitlement <= 0.0 {
+			return
+		}
+
+		person, err := NewPersonFromBenefitExtract(r)
+
+		if err != nil {
+			fmt.Println("Error creating person from benefit extract")
+			return
+		}
+
+		store.Add(person)
+	})
+}
+
 // Concurrently qualifies person based on icnome data
 func qualifyPerson(p Person, universalCreditRow spreadsheet.Row, ch chan Person, w *sync.WaitGroup) {
 	defer w.Done()
