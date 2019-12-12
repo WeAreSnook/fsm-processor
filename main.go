@@ -12,6 +12,8 @@ type InputData struct {
 	// Options
 	rolloverMode  bool // when NLC wipes out the data for the previous year and prepares the award for the next school year.
 	benefitAmount float32
+	outputFolder  string
+	devMode       bool
 
 	// File paths
 	benefitExtract  spreadsheet.ParserInput
@@ -33,6 +35,7 @@ func main() {
 }
 
 func parseInputData() InputData {
+	outputFolderPtr := flag.String("output", "./", "path of the folder outputs should be stored in")
 	benefitExtractPtr := flag.String("benefitextract", "", "filepath for benefit extract spreadsheet")
 	dependentsSHBEPtr := flag.String("dependents", "", "filepath for dependents SHBE spreadsheet")
 	universalCreditPtr := flag.String("universalcredit", "", "filepath for universal credit spreadsheet")
@@ -63,6 +66,8 @@ func parseInputData() InputData {
 	return InputData{
 		rolloverMode:  *rolloverModePtr,
 		benefitAmount: float32(*benefitAmountPtr),
+		outputFolder:  *outputFolderPtr,
+		devMode:       *developmentModePtr,
 
 		benefitExtract: spreadsheet.ParserInput{
 			Path:       path(*benefitExtractPtr, "./private-data/Benefit Extract_06-09-19.txt"),

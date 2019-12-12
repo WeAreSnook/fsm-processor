@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -12,7 +13,10 @@ import (
 func GenerateAwardList(inputData InputData, store PeopleStore, name string) {
 	fmt.Printf("Writing awards list for %d dependents\n", len(store.AwardDependents))
 
-	file, err := os.Create(fmt.Sprintf("report_awards_%s.csv", name))
+	fileName := fmt.Sprintf("report_awards_%s.csv", name)
+	filePath := path.Join(inputData.outputFolder, fileName)
+	fmt.Printf("Outputting award list to %s\n", filePath)
+	file, err := os.Create(filePath)
 	if err != nil {
 		fmt.Println("Error creating output")
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"path"
 )
 
 // GenerateEducationReport generates a spreadsheet of people who were not found in the school roll
@@ -12,7 +13,10 @@ func GenerateEducationReport(inputData InputData, store PeopleStore, name string
 	dependents := FilterUsingExclusionList(inputData, store.ReportForEducationDependents)
 	fmt.Printf("Filtered to %d dependents\n", len(dependents))
 
-	file, err := os.Create(fmt.Sprintf("report_education_%s.csv", name))
+	fileName := fmt.Sprintf("report_education_%s.csv", name)
+	filePath := path.Join(inputData.outputFolder, fileName)
+	file, err := os.Create(filePath)
+	fmt.Printf("Outputting education report to %s\n", filePath)
 	if err != nil {
 		fmt.Println("Error creating output")
 	}

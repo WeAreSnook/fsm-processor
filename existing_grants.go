@@ -22,16 +22,20 @@ func FillExistingGrants(inputData InputData, dependents []Dependent) []Dependent
 
 	matches := 0
 
-	file, err := os.Create("report_existing_awards_matches.csv")
-	if err != nil {
-		fmt.Println("Error creating output")
+	var writer *csv.Writer
+
+	if inputData.devMode {
+		file, err := os.Create("report_existing_awards_matches.csv")
+		if err != nil {
+			fmt.Println("Error creating output")
+		}
+		defer file.Close()
+
+		writer = csv.NewWriter(file)
+		defer writer.Flush()
+
+		writer.Write([]string{"seemis", "claim", "pupil forename", "award forename", "full forename score", "truncated pupil forename", "truncated award forename", "truncated forename score", "pupil surname", "award surname", "combined score", "truncated combined score"})
 	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	writer.Write([]string{"seemis", "claim", "pupil forename", "award forename", "full forename score", "truncated pupil forename", "truncated award forename", "truncated forename score", "pupil surname", "award surname", "combined score", "truncated combined score"})
 
 	for index, dependent := range dependents {
 		nino := CleanString(dependent.Person.Nino)
@@ -78,7 +82,7 @@ func FillExistingGrants(inputData InputData, dependents []Dependent) []Dependent
 		}
 
 		// Log the best match
-		if bestMatchScore > 0 {
+		if bestMatchScore > 0 && inputData.devMode {
 			writer.Write([]string{
 				dependent.Seemis, fmt.Sprintf("%d", dependent.Person.ClaimNumber),
 				dependent.SeemisForename, spreadsheet.ColByName(bestMatch, "Pupil Forename"), fmt.Sprintf("%f", bestMatchForenameScore),

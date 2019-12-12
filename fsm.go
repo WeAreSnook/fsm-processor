@@ -51,7 +51,7 @@ func GenerateFsmAwards(inputData InputData) PeopleStore {
 	// inEducation := below16
 
 	GenerateAwardList(inputData, store, "fsm")
-	GenerateEducationReport(inputData, store, "ctr")
+	GenerateEducationReport(inputData, store, "fsm")
 
 	return store
 }

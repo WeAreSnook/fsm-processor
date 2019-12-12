@@ -45,16 +45,19 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 		close(matchChannel)
 	}()
 
-	file, err := os.Create("report_fuzzy_matches.csv")
-	if err != nil {
-		fmt.Println("Error creating output")
+	var writer *csv.Writer
+	if inputData.devMode {
+		file, err := os.Create("report_fuzzy_matches.csv")
+		if err != nil {
+			fmt.Println("Error creating output")
+		}
+		defer file.Close()
+
+		writer = csv.NewWriter(file)
+		defer writer.Flush()
+
+		writer.Write([]string{"claim number", "seemis ref", "forename SHBE", "forename SEEMIS", "forename score", "surname SHBE", "surname SEEMIS", "surname score", "postcode SHBE", "postcode SEEMIS", "postcode score", "address SHBE", "address SEEMIS", "address score", "dob SHBE", "dob SEEMIS", "dob score", "weighted score"})
 	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	writer.Write([]string{"claim number", "seemis ref", "forename SHBE", "forename SEEMIS", "forename score", "surname SHBE", "surname SEEMIS", "surname score", "postcode SHBE", "postcode SEEMIS", "postcode score", "address SHBE", "address SEEMIS", "address score", "dob SHBE", "dob SEEMIS", "dob score", "weighted score"})
 
 	dobString := func(t time.Time) string {
 		return t.Format("02-01-06")
@@ -77,7 +80,7 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 			unmatchedDependents = append(unmatchedDependents, dependent)
 		}
 
-		if isMatch {
+		if isMatch && inputData.devMode {
 			err := writer.Write([]string{
 				fmt.Sprintf("%d", match.ComparableDependent.Dependent.Person.ClaimNumber),
 				match.Row.Seemis,
