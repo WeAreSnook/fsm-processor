@@ -44,12 +44,11 @@ func RespondWith(fsmStore *PeopleStore, ctrStore *PeopleStore, err error) {
 
 // Output represents the result data
 type Output struct {
-	Success        bool   `json:"success"`
-	OutputFilePath string `json:"output_file_path"`
-	FsmDebugData   string `json:"fsm_debug,omitempty"`
-	CtrDebugData   string `json:"ctr_debug,omitempty"`
-	Error          string `json:"error,omitempty"`
-	Log            string `json:"log"`
+	Success      bool   `json:"success"`
+	FsmDebugData string `json:"fsm_debug,omitempty"`
+	CtrDebugData string `json:"ctr_debug,omitempty"`
+	Error        string `json:"error,omitempty"`
+	Log          string `json:"log"`
 }
 
 func generateDebugData(store *PeopleStore) string {
