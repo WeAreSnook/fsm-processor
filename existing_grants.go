@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/addjam/fsm-processor/llog"
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
@@ -27,7 +28,7 @@ func FillExistingGrants(inputData InputData, dependents []Dependent) []Dependent
 	if inputData.devMode {
 		file, err := os.Create("report_existing_awards_matches.csv")
 		if err != nil {
-			fmt.Println("Error creating output")
+			llog.Println("Error creating output")
 		}
 		defer file.Close()
 
@@ -93,7 +94,7 @@ func FillExistingGrants(inputData InputData, dependents []Dependent) []Dependent
 		}
 	}
 
-	fmt.Printf("matched %d out of %d dependents in fsm/cg awards\n", matches, len(dependents))
+	llog.Printf("matched %d out of %d dependents in fsm/cg awards\n", matches, len(dependents))
 	return dependents
 }
 

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 
+	"github.com/addjam/fsm-processor/llog"
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
@@ -42,13 +42,13 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 	})
 
 	var rowsByClaimNum map[int]spreadsheet.Row = make(map[int]spreadsheet.Row)
-	spreadsheet.EachParserRow(universalCreditParser, func(r spreadsheet.Row) {
+	err = spreadsheet.EachParserRow(universalCreditParser, func(r spreadsheet.Row) {
 		claimNumStr := spreadsheet.ColByName(r, "b")
 		claimNum, err := strconv.Atoi(claimNumStr)
 
 		if err != nil {
-			fmt.Printf(`Error converting "%s"`, claimNumStr)
-			fmt.Printf("\n%#v\n", r)
+			llog.Printf(`Error converting "%s"`, claimNumStr)
+			llog.Printf("\n%#v\n", r)
 		}
 
 		if err == nil {
@@ -56,13 +56,17 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 		}
 	})
 
+	if err != nil {
+		return people, err
+	}
+
 	var wg sync.WaitGroup
 	qualifyingPeopleChan := make(chan Person)
 
 	for _, person := range store.People {
 		wg.Add(1)
 		ucRow := rowsByClaimNum[person.ClaimNumber]
-		go qualifyPerson(person, ucRow, qualifyingPeopleChan, &wg)
+		go qualifyPerson(inputData, person, ucRow, qualifyingPeopleChan, &wg)
 	}
 
 	go func() {
@@ -79,8 +83,8 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 
 // AddPeopleWithCtr adds people to the store who are receiging a
 // weekly cts entitlement greater than 0
-func AddPeopleWithCtr(inputData InputData, store *PeopleStore) {
-	spreadsheet.EachRow(inputData.benefitExtract, func(r spreadsheet.Row) {
+func AddPeopleWithCtr(inputData InputData, store *PeopleStore) error {
+	return spreadsheet.EachRow(inputData.benefitExtract, func(r spreadsheet.Row) {
 		weeklyCtsEntitlement := spreadsheet.FloatColByName(r, "Weekly CTS  entitlement")
 
 		if weeklyCtsEntitlement <= 0.0 {
@@ -90,7 +94,7 @@ func AddPeopleWithCtr(inputData InputData, store *PeopleStore) {
 		person, err := NewPersonFromBenefitExtract(r)
 
 		if err != nil {
-			fmt.Println("Error creating person from benefit extract")
+			llog.Println("Error creating person from benefit extract")
 			return
 		}
 
@@ -99,7 +103,7 @@ func AddPeopleWithCtr(inputData InputData, store *PeopleStore) {
 }
 
 // Concurrently qualifies person based on icnome data
-func qualifyPerson(p Person, universalCreditRow spreadsheet.Row, ch chan Person, w *sync.WaitGroup) {
+func qualifyPerson(inputData InputData, p Person, universalCreditRow spreadsheet.Row, ch chan Person, w *sync.WaitGroup) {
 	defer w.Done()
 
 	// Calculate step one/two data
@@ -113,7 +117,7 @@ func qualifyPerson(p Person, universalCreditRow spreadsheet.Row, ch chan Person,
 	}
 
 	// Check for FSM & CG combined qualification
-	incomeData.combinedQualifier, incomeData.qualifierType = determineCombinedQualifier(p, incomeData, universalCreditRow)
+	incomeData.combinedQualifier, incomeData.qualifierType = determineCombinedQualifier(inputData, p, incomeData, universalCreditRow)
 	if incomeData.combinedQualifier {
 		p.QualiferType = incomeData.qualifierType
 		for i, d := range p.Dependents {
@@ -196,7 +200,7 @@ func calculateStepTwo(person Person) float32 {
 	return sumFloatColumns(person.BenefitExtractRow, colNames)
 }
 
-func determineCombinedQualifier(p Person, incomeData incomeData, universalCreditRow spreadsheet.Row) (bool, string) {
+func determineCombinedQualifier(inputData InputData, p Person, incomeData incomeData, universalCreditRow spreadsheet.Row) (bool, string) {
 	row := p.BenefitExtractRow
 
 	wtc := spreadsheet.FloatColByName(row, "Clmt Working Tax Credits") + spreadsheet.FloatColByName(row, "Ptnr Working Tax Credits")
@@ -217,7 +221,7 @@ func determineCombinedQualifier(p Person, incomeData incomeData, universalCredit
 		benefitAmountStr := spreadsheet.ColByName(universalCreditRow, "aa")
 		benefitAmount, err := strconv.Atoi(benefitAmountStr)
 		if err == nil {
-			ucQualifier = benefitAmount < 610 // TODO from input data
+			ucQualifier = float32(benefitAmount) < inputData.benefitAmount
 		}
 	}
 
@@ -249,8 +253,8 @@ func sumFloatColumns(row spreadsheet.Row, colNames []string) float32 {
 
 		value, err := strconv.ParseFloat(cellStr, 32)
 		if err != nil {
-			fmt.Printf(`Error parsing float from cell value "%s" for col name "%s", falling back to 0`, cellStr, colName)
-			fmt.Printf("\n")
+			llog.Printf(`Error parsing float from cell value "%s" for col name "%s", falling back to 0`, cellStr, colName)
+			llog.Printf("\n")
 			value = 0
 		}
 		result += float32(value)

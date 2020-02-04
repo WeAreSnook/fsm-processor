@@ -5,20 +5,22 @@ import (
 	"fmt"
 	"os"
 	"path"
+
+	"github.com/addjam/fsm-processor/llog"
 )
 
 // GenerateEducationReport generates a spreadsheet of people who were not found in the school roll
 func GenerateEducationReport(inputData InputData, store PeopleStore, name string) {
-	fmt.Printf("Writing education report for %d dependents\n", len(store.ReportForEducationDependents))
+	llog.Printf("Writing education report for %d dependents\n", len(store.ReportForEducationDependents))
 	dependents := FilterUsingExclusionList(inputData, store.ReportForEducationDependents)
-	fmt.Printf("Filtered to %d dependents\n", len(dependents))
+	llog.Printf("Filtered to %d dependents\n", len(dependents))
 
 	fileName := fmt.Sprintf("report_education_%s.csv", name)
 	filePath := path.Join(inputData.outputFolder, fileName)
 	file, err := os.Create(filePath)
-	fmt.Printf("Outputting education report to %s\n", filePath)
+	llog.Printf("Outputting education report to %s\n", filePath)
 	if err != nil {
-		fmt.Println("Error creating output")
+		llog.Println("Error creating output")
 	}
 	defer file.Close()
 

@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/addjam/fsm-processor/llog"
 )
 
-// RespondWith stops execution and outputs some json
-func RespondWith(store *PeopleStore, err error) {
-	// TODO update output data when we have some output to return
+// RespondWith stops execution and outputs response data as json
+//
+// fsmStore - PeopleStore representing the final state of the FSM algorithm data
+// ctrStore - PeopleStore representing the final state of the FSM algorithm data
+// err - optional error that halted execution
+func RespondWith(fsmStore *PeopleStore, ctrStore *PeopleStore, err error) {
 	output := Output{
 		Success:        err == nil,
 		OutputFilePath: "none yet",
@@ -17,17 +22,19 @@ func RespondWith(store *PeopleStore, err error) {
 
 	if err != nil {
 		output.Error = err.Error()
-	} else {
-		output.DebugData = fmt.Sprintf("%d people extracted", len(store.People))
 	}
+
+	output.FsmDebugData = generateDebugData(fsmStore)
+	output.CtrDebugData = generateDebugData(ctrStore)
+	output.Log = llog.Data()
 
 	// Format json
 	json, err := json.Marshal(output)
 	if err != nil {
-		log.Fatal("Error marshalling json from store")
+		log.Fatal(`{ "success": false, "error": "Error marshalling json from store" }`)
 	}
 
-	fmt.Println(string(json))
+	fmt.Print(string(json))
 
 	if !output.Success {
 		os.Exit(1)
@@ -40,6 +47,19 @@ func RespondWith(store *PeopleStore, err error) {
 type Output struct {
 	Success        bool   `json:"success"`
 	OutputFilePath string `json:"output_file_path"`
-	DebugData      string `json:"debug,omitempty"`
+	FsmDebugData   string `json:"fsm_debug,omitempty"`
+	CtrDebugData   string `json:"ctr_debug,omitempty"`
 	Error          string `json:"error,omitempty"`
+	Log            string `json:"log"`
+}
+
+func generateDebugData(store *PeopleStore) string {
+	if store == nil {
+		return "No data"
+	}
+
+	return fmt.Sprintf(`
+		%d people extracted,
+	`,
+		len(store.People))
 }

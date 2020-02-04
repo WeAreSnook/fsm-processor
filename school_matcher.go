@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/addjam/fsm-processor/llog"
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
@@ -49,7 +50,7 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 	if inputData.devMode {
 		file, err := os.Create("report_fuzzy_matches.csv")
 		if err != nil {
-			fmt.Println("Error creating output")
+			llog.Println("Error creating output")
 		}
 		defer file.Close()
 
@@ -92,13 +93,13 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 				fmt.Sprintf("%f", match.Score),
 			})
 			if err != nil {
-				fmt.Println("Error Writing line")
+				llog.Println("Error Writing line")
 			}
 		}
 	}
 
-	fmt.Printf("%d dependents in NLC, %d unmatched, out of %d total\n", len(matchedDependents), len(unmatchedDependents), len(allDependents))
-	fmt.Printf("%d comparisons\n", numComparisons)
+	llog.Printf("%d dependents in NLC, %d unmatched, out of %d total\n", len(matchedDependents), len(unmatchedDependents), len(allDependents))
+	llog.Printf("%d comparisons\n", numComparisons)
 
 	return matchedDependents, unmatchedDependents, nil
 }
@@ -184,9 +185,9 @@ func cacheSchoolRoll(input spreadsheet.ParserInput, store PeopleStore) (allRows 
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	fmt.Printf("Generated postcode index with %d items\n", len(postcodeIndex))
-	fmt.Printf("Generated surname index with %d items\n", len(surnameIndex))
-	fmt.Printf("Loaded %d items into memory\n", len(schoolRollRows))
+	llog.Printf("Generated postcode index with %d items\n", len(postcodeIndex))
+	llog.Printf("Generated surname index with %d items\n", len(surnameIndex))
+	llog.Printf("Loaded %d items into memory\n", len(schoolRollRows))
 	sort.Sort(schoolRowBySurname(schoolRollRows))
 
 	return schoolRollRows, postcodeIndex, surnameIndex, err

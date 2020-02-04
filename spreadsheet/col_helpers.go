@@ -1,8 +1,9 @@
 package spreadsheet
 
 import (
-	"fmt"
 	"strconv"
+
+	"github.com/addjam/fsm-processor/llog"
 )
 
 // ColByName returns the string in the cell at the specified column
@@ -25,8 +26,7 @@ func FloatColByName(r Row, name string) float32 {
 
 	value, err := strconv.ParseFloat(str, 32)
 	if err != nil {
-		fmt.Printf(`Error parsing float for column "%s", falling back to 0`, name)
-		fmt.Println("")
+		llog.Printf(`Error parsing float for column "%s", falling back to 0`, name)
 		return 0
 	}
 

@@ -2,12 +2,11 @@ package spreadsheet
 
 import (
 	"encoding/csv"
-	"log"
 )
 
 // EachParserRow calls func for each of the rows provided by a Parser
 // Automatically closes the parser
-func EachParserRow(p Parser, f func(Row)) {
+func EachParserRow(p Parser, f func(Row)) error {
 	defer p.Close()
 
 	for {
@@ -21,11 +20,13 @@ func EachParserRow(p Parser, f func(Row)) {
 				break
 			}
 
-			log.Fatal(err)
+			return err
 		}
 
 		f(row)
 	}
+
+	return nil
 }
 
 // EachRow takes the path of a spreadsheet and executes the func once for each row
@@ -35,9 +36,7 @@ func EachRow(input ParserInput, f func(Row)) error {
 		return err
 	}
 
-	EachParserRow(parser, f)
-
-	return nil
+	return EachParserRow(parser, f)
 }
 
 // CountRows returns the number of rows in a spreadsheet

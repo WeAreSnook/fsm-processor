@@ -1,8 +1,6 @@
 package main
 
-import (
-	"fmt"
-)
+import "github.com/addjam/fsm-processor/llog"
 
 // GenerateCtrBasedAwards combined spreadsheet data and the output from the FSM algorithm
 // to determine who can get clothing grant based on CTR. Outputs as an awards spreadsheet and
@@ -10,20 +8,21 @@ import (
 func GenerateCtrBasedAwards(inputData InputData, fsmStore PeopleStore) PeopleStore {
 	handleErr := func(err error, store PeopleStore) {
 		if err != nil {
-			RespondWith(&store, err)
+			RespondWith(nil, &store, err)
 			return
 		}
 	}
 
 	store := PeopleStore{}
-
-	AddPeopleWithCtr(inputData, &store)
-	fmt.Printf("%d people with CTR\n", len(store.People))
-
 	var err error
+
+	err = AddPeopleWithCtr(inputData, &store)
+	handleErr(err, store)
+	llog.Printf("%d people with CTR\n", len(store.People))
+
 	store.People, err = PeopleInHouseholdsWithChildren(inputData, store)
 	handleErr(err, store)
-	fmt.Printf("%d people after household check\n", len(store.People))
+	llog.Printf("%d people after household check\n", len(store.People))
 
 	// Mark everyone as CG eligible
 	for i, p := range store.People {
@@ -38,25 +37,25 @@ func GenerateCtrBasedAwards(inputData InputData, fsmStore PeopleStore) PeopleSto
 	handleErr(err, store)
 	store.ReportForEducationDependents = nonNlcDependents
 	store.AwardDependents = nlcDependents
-	fmt.Printf("%d dependents in NLC schools, %d unmatched\n", len(nlcDependents), len(nonNlcDependents))
+	llog.Printf("%d dependents in NLC schools, %d unmatched\n", len(nlcDependents), len(nonNlcDependents))
 
 	store.AwardDependents = FillExistingGrants(inputData, store.AwardDependents)
-	fmt.Printf("got %d AwardDependents filled\n", len(store.AwardDependents))
+	llog.Printf("got %d AwardDependents filled\n", len(store.AwardDependents))
 
 	store.AwardDependents = filterNotReceivingCG(store.AwardDependents)
-	fmt.Printf("%d not receiving CG\n", len(store.AwardDependents))
+	llog.Printf("%d not receiving CG\n", len(store.AwardDependents))
 
 	store.AwardDependents = FilterUsingExclusionList(inputData, store.AwardDependents)
-	fmt.Printf("%d after filtering exclusion list\n", len(store.AwardDependents))
+	llog.Printf("%d after filtering exclusion list\n", len(store.AwardDependents))
 
 	store.AwardDependents = filterDependents(store.AwardDependents, fsmStore.AwardDependents)
-	fmt.Printf("%d after filtering from awards list\n", len(store.AwardDependents))
+	llog.Printf("%d after filtering from awards list\n", len(store.AwardDependents))
 
 	store.AwardDependents = FilterMinimumP1(store.AwardDependents)
-	fmt.Printf("%d in minimum P1\n", len(store.AwardDependents))
+	llog.Printf("%d in minimum P1\n", len(store.AwardDependents))
 
 	// atLeast16, below16 := splitByMinimumAge(inputData, childrenInMinimumP1)
-	// fmt.Printf("%d people at least age 16, %d below\n", len(atLeast16), len(below16))
+	// llog.Printf("%d people at least age 16, %d below\n", len(atLeast16), len(below16))
 
 	// TODO for atLeast16 => waiting for a flag to be added to school roll indicating if they are still in education
 	// inEducation := below16

@@ -6,19 +6,20 @@ import (
 	"os"
 	"path"
 
+	"github.com/addjam/fsm-processor/llog"
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
 // GenerateAwardList looks at the AwardDependents and generates an award list spreadsheet
 func GenerateAwardList(inputData InputData, store PeopleStore, name string) {
-	fmt.Printf("Writing awards list for %d dependents\n", len(store.AwardDependents))
+	llog.Printf("Writing awards list for %d dependents\n", len(store.AwardDependents))
 
 	fileName := fmt.Sprintf("report_awards_%s.csv", name)
 	filePath := path.Join(inputData.outputFolder, fileName)
-	fmt.Printf("Outputting award list to %s\n", filePath)
+	llog.Printf("Outputting award list to %s\n", filePath)
 	file, err := os.Create(filePath)
 	if err != nil {
-		fmt.Println("Error creating output")
+		llog.Println("Error creating output")
 	}
 	defer file.Close()
 

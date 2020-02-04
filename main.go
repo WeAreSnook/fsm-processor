@@ -2,7 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
+
+	"github.com/addjam/fsm-processor/llog"
 
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
@@ -31,7 +32,7 @@ func main() {
 	fsmStore := GenerateFsmAwards(inputData)
 	ctrStore := GenerateCtrBasedAwards(inputData, fsmStore)
 
-	RespondWith(&ctrStore, nil)
+	RespondWith(&fsmStore, &ctrStore, nil)
 }
 
 func parseInputData() InputData {
@@ -45,6 +46,7 @@ func parseInputData() InputData {
 	filterPtr := flag.String("filter", "", "filepath for filter spreadsheet")
 	rolloverModePtr := flag.Bool("rollover", false, "rollover mode")
 	developmentModePtr := flag.Bool("dev", false, "development mode, use private-data")
+	logModePtr := flag.Bool("log", false, "log output to stdout (breaks json output)")
 	benefitAmountPtr := flag.Float64("benefitamount", 610.0, "benefit amount") // default £610
 	flag.Parse()
 
@@ -57,11 +59,13 @@ func parseInputData() InputData {
 		}
 
 		if outputPath == "" {
-			log.Fatalf("Error, missing input for path\n")
+			RespondWith(nil, nil, ErrInvalidInputPath{filePath: inputPath})
 		}
 
 		return outputPath
 	}
+
+	llog.PrintToStdout = *logModePtr
 
 	return InputData{
 		rolloverMode:  *rolloverModePtr,

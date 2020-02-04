@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
+	"github.com/addjam/fsm-processor/llog"
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
@@ -30,13 +30,13 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 		}
 
 		desc := consentDescByClaimNumber[claimNumber]
-		hasPermission := desc != "FSM&CG Consent Removed" && desc != "" // TODO this isn't in our example spreadsheet
+		hasPermission := desc != "FSM&CG Consent Removed" && desc != ""
 
 		if hasPermission {
 			person, err := NewPersonFromBenefitExtract(row)
 
 			if err != nil {
-				fmt.Println("Error creating person from benefit extract")
+				llog.Println("Error creating person from benefit extract")
 				return
 			}
 
@@ -59,7 +59,7 @@ func extractConsentData(inputData InputData) (map[int]string, error) {
 			// consent spreadsheet has claim numbers beginning with "TEMP" followed by 6 digits
 			// benefit extract just seems to be numbers. Consent spreadsheet can also have e.g. 000123 but
 			// benefit extract seems to present this as 123
-			// fmt.Printf("Error parsing claim number %s", row.Col(2))
+			// llog.Printf("Error parsing claim number %s", row.Col(2))
 		}
 
 		consentDesc := row.Col(0)
