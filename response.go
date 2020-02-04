@@ -16,8 +16,7 @@ import (
 // err - optional error that halted execution
 func RespondWith(fsmStore *PeopleStore, ctrStore *PeopleStore, err error) {
 	output := Output{
-		Success:        err == nil,
-		OutputFilePath: "none yet",
+		Success: err == nil,
 	}
 
 	if err != nil {
@@ -28,7 +27,7 @@ func RespondWith(fsmStore *PeopleStore, ctrStore *PeopleStore, err error) {
 	output.CtrDebugData = generateDebugData(ctrStore)
 	output.Log = llog.Data()
 
-	// Format json
+	// Output as json
 	json, err := json.Marshal(output)
 	if err != nil {
 		log.Fatal(`{ "success": false, "error": "Error marshalling json from store" }`)
@@ -59,7 +58,7 @@ func generateDebugData(store *PeopleStore) string {
 	}
 
 	return fmt.Sprintf(`
-		%d people extracted,
+		%d people in store,
 	`,
 		len(store.People))
 }
