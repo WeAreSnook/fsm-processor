@@ -104,7 +104,7 @@ func buildLine(inputData InputData, d Dependent) []string {
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's street"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's town"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "School Name"))
-	line = append(line, "TODO School name 2")
+	line = append(line, "") // TODO school name 2
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Year/Stage"))
 
 	// Name match and address match
