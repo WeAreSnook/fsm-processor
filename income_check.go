@@ -8,8 +8,6 @@ import (
 	"github.com/addjam/fsm-processor/spreadsheet"
 )
 
-const ctcWtcAnnualIncomeFigure = 6420
-
 // Required sheets:
 // - Benefit Extract
 // - dependants shbe
@@ -205,7 +203,7 @@ func determineCombinedQualifier(inputData InputData, p Person, incomeData income
 
 	wtc := spreadsheet.FloatColByName(row, "Clmt Working Tax Credits") + spreadsheet.FloatColByName(row, "Ptnr Working Tax Credits")
 	ctc := spreadsheet.FloatColByName(row, "Child tax credit - Claimant") + spreadsheet.FloatColByName(row, "Child tax credit - Partner")
-	belowThreshold := incomeData.taxCreditFigure <= ctcWtcAnnualIncomeFigure
+	belowThreshold := incomeData.taxCreditFigure <= inputData.ctcWtcFigure
 
 	qualifierA := wtc == 0 && ctc > 0 && belowThreshold
 
