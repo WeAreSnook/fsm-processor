@@ -14,6 +14,7 @@ type InputData struct {
 	rolloverMode  bool // when NLC wipes out the data for the previous year and prepares the award for the next school year.
 	benefitAmount float32
 	ctcWtcFigure  float32
+	ctcFigure     float32
 	outputFolder  string
 	devMode       bool
 
@@ -50,6 +51,7 @@ func parseInputData() InputData {
 	logModePtr := flag.Bool("log", false, "log output to stdout (breaks json output)")
 	benefitAmountPtr := flag.Float64("benefitamount", 610.0, "benefit amount")           // default £610
 	ctcWtcFigure := flag.Float64("ctcwtcfigure", 6420.0, "ctc/wtc annual income figure") // default £6420
+	ctcFigure := flag.Float64("ctcfigure", 16105.0, "ctc annual income figure")          // default £16105
 	flag.Parse()
 
 	path := func(inputPath, devModePath string) string {
@@ -73,6 +75,7 @@ func parseInputData() InputData {
 		rolloverMode:  *rolloverModePtr,
 		benefitAmount: float32(*benefitAmountPtr),
 		ctcWtcFigure:  float32(*ctcWtcFigure),
+		ctcFigure:     float32(*ctcFigure),
 		outputFolder:  *outputFolderPtr,
 		devMode:       *developmentModePtr,
 
