@@ -30,9 +30,9 @@ func GenerateAwardList(inputData InputData, store PeopleStore, name string) {
 		"Record no", "SEEMIS reference",
 
 		// Benefit Extract Columns
-		"Claim Number", "NINO", "Clmt First Forename", "Clmt Surname",
+		"Claim Number", "NINO", "Clmt Title", "Clmt First Forename", "Clmt Surname",
 		"Ptnr NINO", "Ptnr First Forename", "Ptnr Surname",
-		"Address1", "PostCode",
+		"Address1", "PostCode", "Address2", "Address3", "Address4", "Address5",
 
 		// Consent360
 		"Consent",
@@ -76,9 +76,9 @@ func buildLine(inputData InputData, d Dependent) []string {
 		fmt.Sprintf("%d", d.Person.ClaimNumber),
 	}
 
-	benefitColumns := []string{"NINO", "Clmt First Forename", "Clmt Surname",
+	benefitColumns := []string{"NINO", "Clmt Title", "Clmt First Forename", "Clmt Surname",
 		"Ptnr NINO", "Ptnr First Forename", "Ptnr Surname",
-		"Address1", "PostCode"}
+		"Address1", "PostCode", "Address2", "Address3", "Address4", "Address5"}
 	benefitRow := d.Person.BenefitExtractRow
 	for _, colName := range benefitColumns {
 		value := spreadsheet.ColByName(benefitRow, colName)
@@ -104,7 +104,7 @@ func buildLine(inputData InputData, d Dependent) []string {
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's street"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's town"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "School Name"))
-	line = append(line, "") // TODO school name 2
+	line = append(line, "")
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Year/Stage"))
 
 	// Name match and address match
