@@ -46,12 +46,6 @@ func GenerateFsmAwards(inputData InputData) PeopleStore {
 	store.AwardDependents = FilterUsingExclusionList(inputData, store.AwardDependents)
 	llog.Printf("Filtered to %d dependents\n", len(store.AwardDependents))
 
-	// atLeast16, below16 := splitByMinimumAge(inputData, store.AwardDependents)
-	// llog.Printf("%d people at least age 16, %d below\n", len(atLeast16), len(below16))
-
-	// TODO for atLeast16 => waiting for a flag to be added to school roll indicating if they are still in education
-	// inEducation := below16
-
 	GenerateAwardList(inputData, store, "fsm")
 	GenerateEducationReport(inputData, store, "fsm")
 

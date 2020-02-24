@@ -54,14 +54,6 @@ func GenerateCtrBasedAwards(inputData InputData, fsmStore PeopleStore) PeopleSto
 	store.AwardDependents = FilterMinimumP1(store.AwardDependents)
 	llog.Printf("%d in minimum P1\n", len(store.AwardDependents))
 
-	// atLeast16, below16 := splitByMinimumAge(inputData, childrenInMinimumP1)
-	// llog.Printf("%d people at least age 16, %d below\n", len(atLeast16), len(below16))
-
-	// TODO for atLeast16 => waiting for a flag to be added to school roll indicating if they are still in education
-	// inEducation := below16
-
-	// TODO If child isn't getting FSM we request consent to check they are eligible
-
 	GenerateAwardList(inputData, store, "ctr")
 	GenerateEducationReport(inputData, store, "ctr")
 
