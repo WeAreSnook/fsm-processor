@@ -47,9 +47,8 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 		if err != nil {
 			llog.Printf(`Error converting "%s"`, claimNumStr)
 			llog.Printf("\n%#v\n", r)
-		}
+		} else {
 
-		if err == nil {
 			rowsByClaimNum[claimNum] = r
 		}
 	})
@@ -112,6 +111,10 @@ func qualifyPerson(inputData InputData, p Person, universalCreditRow spreadsheet
 		incomeData.taxCreditFigure = incomeData.taxCreditIncomeStepTwo * 52
 	} else {
 		incomeData.taxCreditFigure = (incomeData.taxCreditIncomeStepTwo - 300) * 52
+	}
+
+	if incomeData.taxCreditFigure < 0 {
+		incomeData.taxCreditFigure = 0
 	}
 
 	// Check for FSM & CG combined qualification
