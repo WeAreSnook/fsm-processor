@@ -47,8 +47,28 @@ func PeopleWithQualifyingIncomes(inputData InputData, store PeopleStore) ([]Pers
 		if err != nil {
 			llog.Printf(`Error converting "%s"`, claimNumStr)
 			llog.Printf("\n%#v\n", r)
-		} else {
+		} else if rowsByClaimNum[claimNum] != nil {
+			// Ensure we're using the most recent row for this claim number
+			// Row 'p' has a sequence number, we want the row with the highest
+			// number in that column
+			newSequenceNumberStr := spreadsheet.ColByName(r, "p")
+			newSequenceNumber, err := strconv.Atoi(newSequenceNumberStr)
+			if err != nil {
+				llog.Println("Error processing uc sequence number")
+				newSequenceNumber = 0
+			}
 
+			existingSequenceNumberStr := spreadsheet.ColByName(rowsByClaimNum[claimNum], "p")
+			existingSequenceNumber, err := strconv.Atoi(existingSequenceNumberStr)
+			if err != nil {
+				llog.Println("Error processing uc sequence number")
+				existingSequenceNumber = 0
+			}
+
+			if existingSequenceNumber < newSequenceNumber {
+				rowsByClaimNum[claimNum] = r
+			}
+		} else {
 			rowsByClaimNum[claimNum] = r
 		}
 	})
