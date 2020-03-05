@@ -55,7 +55,7 @@ func GenerateAwardList(inputData InputData, store PeopleStore, name string) {
 		"FSM Approved",
 
 		// New
-		"FSM Qualifier", "check attendance",
+		"FSM Qualifier", "Next step", "check attendance",
 	})
 
 	for _, d := range store.AwardDependents {
@@ -86,13 +86,7 @@ func buildLine(inputData InputData, d Dependent) []string {
 	}
 
 	// Consent360
-	if d.Person.ConsentDesc == "" {
-		line = append(line, "Absent")
-	} else if d.Person.ConsentDesc == "FSM&CG Consent Removed" {
-		line = append(line, "Refused")
-	} else {
-		line = append(line, "Given")
-	}
+	line = append(line, d.Person.ConsentStr())
 
 	// School Roll
 
@@ -127,6 +121,8 @@ func buildLine(inputData InputData, d Dependent) []string {
 
 	// New
 	line = append(line, d.Person.QualiferType)
+
+	line = append(line, LetterForDependent(d, inputData.rolloverMode).String())
 
 	if d.IsAtLeast16(inputData.rolloverMode) {
 		line = append(line, "Yes")

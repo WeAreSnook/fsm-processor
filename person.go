@@ -79,6 +79,22 @@ func (p Person) String() string {
 	return fmt.Sprintf("[Person %s %s, nino: %s, claim no: %d]", p.Forename, p.Surname, p.Nino, p.ClaimNumber)
 }
 
+// ConsentStr returns the consent string based on the given description
+func (p Person) ConsentStr() string {
+	if p.ConsentDesc == "" {
+		return "Absent"
+	} else if p.ConsentDesc == "FSM&CG Consent Removed" {
+		return "Refused"
+	} else {
+		return "Given"
+	}
+}
+
+// HasConsent returns if the person has given consent
+func (p Person) HasConsent() bool {
+	return p.ConsentStr() == "Given"
+}
+
 // AddDependent adds the provided dependent to the Person
 func (p *Person) AddDependent(d Dependent) {
 	d.Person = *p
