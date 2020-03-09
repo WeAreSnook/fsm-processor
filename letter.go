@@ -90,7 +90,7 @@ func LetterForDependent(d Dependent, rollover bool) Letter {
 				return AwardFSMAndCG
 			}
 
-			if (d.ExistingFSM || d.NewFSM) && d.NewCG {
+			if d.NewCG {
 				return AwardCG
 			}
 
