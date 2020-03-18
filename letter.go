@@ -5,41 +5,41 @@ type Letter int
 
 const (
 	// NoLetter when no next step is available
-	NoLetter Letter = iota
+	NoLetter Letter = 0
 
 	// Non-rollover
 
 	// AwardFSMAndCG letter
-	AwardFSMAndCG
+	AwardFSMAndCG Letter = 1
 
 	// AwardCG letter
-	AwardCG
+	AwardCG Letter = 2
 
 	// AwardFSM letter
-	AwardFSM
+	AwardFSM Letter = 3
 
 	// AwardCGAndRequestConsent letter
-	AwardCGAndRequestConsent
+	AwardCGAndRequestConsent Letter = 4
 
 	// RequestConsent letter
-	RequestConsent
+	RequestConsent Letter = 5
 
 	// Rollover
 
 	// RolloverFSMAndCG letter
-	RolloverFSMAndCG
+	RolloverFSMAndCG Letter = 6
 
 	// RolloverCG letter
-	RolloverCG
+	RolloverCG Letter = 7
 
 	// RolloverFSM letter
-	RolloverFSM
+	RolloverFSM Letter = 8
 
 	// RolloverCGAndRequestConsent letter
-	RolloverCGAndRequestConsent
+	RolloverCGAndRequestConsent Letter = 9
 
 	// RolloverRequestConsent letter
-	RolloverRequestConsent
+	RolloverRequestConsent Letter = 10
 )
 
 func (l Letter) String() string {
@@ -90,7 +90,7 @@ func LetterForDependent(d Dependent, rollover bool) Letter {
 				return AwardFSMAndCG
 			}
 
-			if (d.ExistingFSM || d.NewFSM) && d.NewCG {
+			if !d.ExistingCG && d.NewCG {
 				return AwardCG
 			}
 
