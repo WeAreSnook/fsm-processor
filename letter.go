@@ -45,16 +45,16 @@ const (
 func (l Letter) String() string {
 	return []string{
 		"",
-		"AwardFSMAndCG",
-		"AwardCG",
-		"AwardFSM",
-		"AwardCGAndRequestConsent",
-		"RequestConsent",
-		"RolloverFSMAndCG",
-		"RolloverCG",
-		"RolloverFSM",
-		"RolloverCGAndRequestConsent",
-		"RolloverRequestConsent",
+		"3. Award FSM and CG",
+		"2. Award CG",
+		"4. Award FSM",
+		"1. Award CG + request consent",
+		"5. Request consent",
+		"6. Rollover FSM and CG",
+		"8. Rollover CG",
+		"7. Rollover FSM",
+		"9. Rollover CG + request consent",
+		"10. Rollover Request consent",
 	}[l]
 }
 
