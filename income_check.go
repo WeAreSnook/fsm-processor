@@ -142,7 +142,7 @@ func qualifyPerson(inputData InputData, p Person, universalCreditRow spreadsheet
 	if incomeData.combinedQualifier {
 		p.QualiferType = incomeData.qualifierType
 		for i, d := range p.Dependents {
-			d.NewCG = true
+			d.NewCG = inputData.awardCG
 			d.NewFSM = true
 			d.Person = p
 			p.Dependents[i] = d
@@ -156,7 +156,7 @@ func qualifyPerson(inputData InputData, p Person, universalCreditRow spreadsheet
 	weeklyCtsEntitlement := spreadsheet.FloatColByName(p.BenefitExtractRow, "Weekly CTS  entitlement")
 	if weeklyCtsEntitlement > 0.0 {
 		for i, d := range p.Dependents {
-			d.NewCG = true
+			d.NewCG = inputData.awardCG
 			d.Person = p
 			p.Dependents[i] = d
 		}

@@ -27,7 +27,7 @@ func GenerateCtrBasedAwards(inputData InputData, fsmStore PeopleStore) PeopleSto
 	// Mark everyone as CG eligible
 	for i, p := range store.People {
 		for j, d := range p.Dependents {
-			d.NewCG = true
+			d.NewCG = inputData.awardCG
 			p.Dependents[j] = d
 		}
 		store.People[i] = p

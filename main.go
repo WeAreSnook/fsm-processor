@@ -12,6 +12,7 @@ import (
 type InputData struct {
 	// Options
 	rolloverMode  bool // when NLC wipes out the data for the previous year and prepares the award for the next school year.
+	awardCG       bool // e.g. might not awarded after about 20th March
 	benefitAmount float32
 	ctcWtcFigure  float32
 	ctcFigure     float32
@@ -47,6 +48,7 @@ func parseInputData() InputData {
 	consent360Ptr := flag.String("consent", "", "filepath for consent spreadsheet")
 	filterPtr := flag.String("filter", "", "filepath for filter spreadsheet")
 	rolloverModePtr := flag.Bool("rollover", false, "rollover mode")
+	awardCGPtr := flag.Bool("awardcg", true, "if we should award CG")
 	developmentModePtr := flag.Bool("dev", false, "development mode, use private-data")
 	logModePtr := flag.Bool("log", false, "log output to stdout (breaks json output)")
 	benefitAmountPtr := flag.Float64("benefitamount", 610.0, "benefit amount")           // default £610
@@ -73,6 +75,7 @@ func parseInputData() InputData {
 
 	return InputData{
 		rolloverMode:  *rolloverModePtr,
+		awardCG:       *awardCGPtr,
 		benefitAmount: float32(*benefitAmountPtr),
 		ctcWtcFigure:  float32(*ctcWtcFigure),
 		ctcFigure:     float32(*ctcFigure),
