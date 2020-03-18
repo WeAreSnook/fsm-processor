@@ -35,7 +35,7 @@ func GenerateEducationReport(inputData InputData, store PeopleStore, name string
 	})
 
 	for _, d := range dependents {
-		dob := d.Dob.Format("02-01-06")
+		dob := d.Dob.Format("02-01-2006")
 
 		line := []string{
 			fmt.Sprintf("%d", d.Person.ClaimNumber),

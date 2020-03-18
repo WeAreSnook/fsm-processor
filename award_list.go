@@ -93,7 +93,7 @@ func buildLine(inputData InputData, d Dependent) []string {
 	schoolRollRow := d.SchoolRollRow
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Forename"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Surname"))
-	line = append(line, spreadsheet.ColByName(schoolRollRow, "Date of Birth"))
+	line = append(line, d.Dob.Format("02-01-2006"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's property"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's street"))
 	line = append(line, spreadsheet.ColByName(schoolRollRow, "Pupil's town"))
