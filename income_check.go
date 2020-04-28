@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 
@@ -24,6 +25,18 @@ type incomeData struct {
 	taxCreditFigure        float32
 	combinedQualifier      bool
 	qualifierType          string
+}
+
+func (i incomeData) String() string {
+	return fmt.Sprintf(
+		"[[[IncomeData:\n%s\nstep one: %f, step two: %f, figure: %f, combined? %t, type %s]]]",
+		i.person.String(),
+		i.taxCreditIncomeStepOne,
+		i.taxCreditIncomeStepTwo,
+		i.taxCreditFigure,
+		i.combinedQualifier,
+		i.qualifierType,
+	)
 }
 
 // PeopleWithQualifyingIncomes returns just the people in the provided store that qualify

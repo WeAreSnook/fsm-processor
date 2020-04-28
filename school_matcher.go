@@ -95,6 +95,12 @@ func PeopleWithChildrenAtNlcSchool(inputData InputData, store PeopleStore) (matc
 			if err != nil {
 				llog.Println("Error Writing line")
 			}
+
+			if match.ComparableDependent.Dependent.Person.ClaimNumber == inputData.debugClaimNumber {
+				llog.Println("Match with claim num <======")
+				llog.Println(match.ComparableDependent.Dependent.String())
+				llog.Println(match.ComparableDependent.Dependent.Person.String())
+			}
 		}
 	}
 

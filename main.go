@@ -10,6 +10,9 @@ import (
 
 // InputData represents all options and files received
 type InputData struct {
+	// Debug options
+	debugClaimNumber int
+
 	// Options
 	rolloverMode  bool // when NLC wipes out the data for the previous year and prepares the award for the next school year.
 	awardCG       bool // e.g. might not awarded after about 20th March
@@ -32,6 +35,8 @@ type InputData struct {
 func main() {
 	inputData := parseInputData()
 
+	llog.Printf("Rollover? %t\n", inputData.rolloverMode)
+
 	fsmStore := GenerateFsmAwards(inputData)
 	ctrStore := GenerateCtrBasedAwards(inputData, fsmStore)
 
@@ -40,6 +45,7 @@ func main() {
 
 func parseInputData() InputData {
 	outputFolderPtr := flag.String("output", "./", "path of the folder outputs should be stored in")
+	debugClaimNumberPtr := flag.Int("debugclaim", -1, "claimnumber to output debug logs for")
 	benefitExtractPtr := flag.String("benefitextract", "", "filepath for benefit extract spreadsheet")
 	dependentsSHBEPtr := flag.String("dependents", "", "filepath for dependents SHBE spreadsheet")
 	universalCreditPtr := flag.String("universalcredit", "", "filepath for universal credit spreadsheet")
@@ -74,6 +80,8 @@ func parseInputData() InputData {
 	llog.PrintToStdout = *logModePtr
 
 	return InputData{
+		debugClaimNumber: *debugClaimNumberPtr,
+
 		rolloverMode:  *rolloverModePtr,
 		awardCG:       *awardCGPtr,
 		benefitAmount: float32(*benefitAmountPtr),
@@ -83,7 +91,7 @@ func parseInputData() InputData {
 		devMode:       *developmentModePtr,
 
 		benefitExtract: spreadsheet.ParserInput{
-			Path:       path(*benefitExtractPtr, "./private-data/Benefit Extract_06-09-19.txt"),
+			Path:       path(*benefitExtractPtr, "./private-data/Benefit Extract.txt"),
 			HasHeaders: true,
 			RequiredHeaders: []string{
 				// Extracted in consent check
@@ -133,24 +141,24 @@ func parseInputData() InputData {
 			},
 		},
 		dependentsSHBE: spreadsheet.ParserInput{
-			Path:       path(*dependentsSHBEPtr, "./private-data/dependants SHBE_06-09-19-2.xlsx"),
+			Path:       path(*dependentsSHBEPtr, "./private-data/dependants SHBE.xlsx"),
 			HasHeaders: true,
 		},
 		universalCredit: spreadsheet.ParserInput{
-			Path:       path(*universalCreditPtr, "./private-data/hb-uc.d_06-09-19.txt"),
+			Path:       path(*universalCreditPtr, "./private-data/hb-uc.d.txt"),
 			HasHeaders: false,
 			Format:     spreadsheet.Ssv,
 		},
 		fsmCgAwards: spreadsheet.ParserInput{
-			Path:       path(*fsmCgAwardsPtr, "./private-data/FSM&CGawards_06-09-19.xlsx"),
+			Path:       path(*fsmCgAwardsPtr, "./private-data/Current Year Awards.xlsx"),
 			HasHeaders: true,
 		},
 		schoolRoll: spreadsheet.ParserInput{
-			Path:       path(*schoolRollPtr, "./private-data/School Roll Pupil Data_06-09-19-2.xlsx"),
+			Path:       path(*schoolRollPtr, "./private-data/School Roll.xlsx"),
 			HasHeaders: true,
 		},
 		consent360: spreadsheet.ParserInput{
-			Path:       path(*consent360Ptr, "./private-data/Consent Report W360.xls"),
+			Path:       path(*consent360Ptr, "./private-data/Consent Report.xls"),
 			HasHeaders: true,
 			RequiredHeaders: []string{
 				"DocDesc",
@@ -159,7 +167,7 @@ func parseInputData() InputData {
 			},
 		},
 		filter: spreadsheet.ParserInput{
-			Path:       path(*filterPtr, "./private-data/filter.xlsx"),
+			Path:       path(*filterPtr, "./private-data/Filter File-Test.xlsx"),
 			HasHeaders: true,
 			RequiredHeaders: []string{
 				"claim ref",

@@ -102,7 +102,7 @@ func (p *Person) AddDependent(d Dependent) {
 }
 
 func (d Dependent) String() string {
-	return fmt.Sprintf("[Dependent %s %s, seemis: %s, nino: %s, claim no: %d]", d.Forename, d.Surname, d.Seemis, d.Person.Nino, d.Person.ClaimNumber)
+	return fmt.Sprintf("[Dependent %s %s, seemis: %s, nino: %s, claim no: %d, existing cg: %t, existing fsm: %t, new cg: %t, new fsm: %t]", d.Forename, d.Surname, d.Seemis, d.Person.Nino, d.Person.ClaimNumber, d.ExistingCG, d.ExistingFSM, d.NewCG, d.NewFSM)
 }
 
 // HasNewEntitlements returns true if either FSM, CG, or both are now entitlements and weren't previously
