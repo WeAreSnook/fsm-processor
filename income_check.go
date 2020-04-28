@@ -139,6 +139,12 @@ func qualifyPerson(inputData InputData, p Person, universalCreditRow spreadsheet
 
 	// Check for FSM & CG combined qualification
 	incomeData.combinedQualifier, incomeData.qualifierType = determineCombinedQualifier(inputData, p, incomeData, universalCreditRow)
+
+	if p.ClaimNumber == inputData.debugClaimNumber {
+		llog.Println("Qualifying debug target")
+		llog.Println(incomeData.String())
+	}
+
 	if incomeData.combinedQualifier {
 		p.QualiferType = incomeData.qualifierType
 		for i, d := range p.Dependents {
@@ -148,12 +154,20 @@ func qualifyPerson(inputData InputData, p Person, universalCreditRow spreadsheet
 			p.Dependents[i] = d
 		}
 
+		if p.ClaimNumber == inputData.debugClaimNumber {
+			llog.Println("Awarded FSM to target claim number: true")
+			llog.Printf("Awarded CG to target claim number: %t\n", inputData.awardCG)
+		}
+
 		ch <- p
 		return
 	}
 
 	// Check for CG-only qualification via weekly cts entitlement being greater than 0.0
 	weeklyCtsEntitlement := spreadsheet.FloatColByName(p.BenefitExtractRow, "Weekly CTS  entitlement")
+	if p.ClaimNumber == inputData.debugClaimNumber {
+		fmt.Printf("Weekly cts entitlement for debug target is %f\n", weeklyCtsEntitlement)
+	}
 	if weeklyCtsEntitlement > 0.0 {
 		for i, d := range p.Dependents {
 			d.NewCG = inputData.awardCG
@@ -239,7 +253,10 @@ func determineCombinedQualifier(inputData InputData, p Person, incomeData income
 	ucQualifier := false
 	if universalCreditRow != nil {
 		benefitAmountStr := spreadsheet.ColByName(universalCreditRow, "aa")
-		benefitAmount, err := strconv.Atoi(benefitAmountStr)
+		benefitAmount, err := strconv.ParseFloat(benefitAmountStr, 32)
+		if p.ClaimNumber == inputData.debugClaimNumber {
+			llog.Printf("Benefit amount for debug target is (str) %s / (float) %f\n", benefitAmountStr, benefitAmount)
+		}
 		if err == nil {
 			ucQualifier = float32(benefitAmount) < inputData.benefitAmount
 		}
@@ -256,6 +273,11 @@ func determineCombinedQualifier(inputData InputData, p Person, incomeData income
 		qualifyType = "PASSPORTED"
 	} else if ucQualifier {
 		qualifyType = "UC QUALIFIER"
+	}
+
+	if p.ClaimNumber == inputData.debugClaimNumber {
+		llog.Printf("Determined qualifier for debug target is %s\n", qualifyType)
+		llog.Printf("WTC: %f, CTC: %f, Passported Claim Indicator %s\n", wtc, ctc, passportedStdClaimIndicator)
 	}
 
 	return qualifies, qualifyType
