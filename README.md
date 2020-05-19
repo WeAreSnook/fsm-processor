@@ -56,12 +56,12 @@ Once built with `go build` you can run the processor with the following inputs:
 
 # Implementation
 
-The app is split into 2 main packages, see the `go doc` for full details.
+The app is split into 2 main packages, see the output of `go doc` for [details](./DOCS.md).
 
 ### spreadsheet
 
 Input spreadsheets come in various forms, including: csv, tsv, xlsx, xls. This package abstracts the details of working with each individual format to allow them to be treated the same. Also provides convenience functions to e.g. fetch columns by name, override column names, validate certain column names exist in the input, and convert cell values to various types.
 
-### main
+### main
 
 Runs the checks to determine who gets FSM and/or CG based on the input spreadsheets.
