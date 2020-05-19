@@ -20,6 +20,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 	}
 
 	// Parse benefits extract
+	numPeople := 0
 	err = spreadsheet.EachRow(inputData.benefitExtract, func(row spreadsheet.Row) {
 		claimNumStr := spreadsheet.ColByName(row, "Claim Number")
 		claimNumber, err := strconv.Atoi(claimNumStr)
@@ -31,6 +32,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 
 		desc := consentDescByClaimNumber[claimNumber]
 		hasPermission := desc != "FSM&CG Consent Removed" && desc != ""
+		numPeople += 1
 
 		if hasPermission {
 			person, err := NewPersonFromBenefitExtract(row)
@@ -45,6 +47,7 @@ func AddPeopleWithConsent(inputData InputData, peopleStore *PeopleStore) error {
 		}
 	})
 
+	llog.Printf("%d rows checked for consent\n", numPeople)
 	return err
 }
 
