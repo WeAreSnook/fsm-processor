@@ -2,3 +2,4 @@ private-data/
 report_*
 *.csv
 /fsm-processor*
+.idea
